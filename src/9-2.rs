@@ -28,8 +28,7 @@ fn main() {
         let val = values.iter().next().unwrap().clone();
         values.remove(&val);
         b.insert(val);
-        while values.iter().any(|p| belongs(&b, p)) {
-            let newval = values.iter().find(|p| belongs(&b, p)).unwrap().clone();
+        while let Some(newval) = values.iter().find(|p| belongs(&b, p)).cloned() {
             values.remove(&newval);
             b.insert(newval);
         }
