@@ -44,21 +44,16 @@ fn main() {
     println!("{}.", &sizes[0] * &sizes[1] * &sizes[2]);
 }
 
-fn neighbour(a: &(usize, usize), b: &(usize, usize)) -> bool {
-    if a.0 == b.0 {
-        (a.1 < b.1 && a.1 + 1 == b.1) || (a.1 > b.1 && a.1 - 1 == b.1)
-    } else if a.1 == b.1 {
-        (a.0 < b.0 && a.0 + 1 == b.0) || (a.0 > b.0 && a.0 - 1 == b.0)
-    } else {
-        false
-    }
-}
-
 fn belongs(b: &HashSet<(usize, usize)>, p: &(usize, usize)) -> bool {
-    for i in b.iter() {
-        if neighbour(i, p) {
+    if p.0 > 0 {
+        if b.contains(&(p.0 - 1, p.1)) {
             return true;
         }
     }
-    return false;
+    if p.1 > 0 {
+        if b.contains(&(p.0, p.1 - 1)) {
+            return true;
+        }
+    }
+    return b.contains(&(p.0 + 1, p.1)) || b.contains(&(p.0, p.1 + 1));
 }
