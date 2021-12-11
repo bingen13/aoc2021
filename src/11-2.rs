@@ -12,7 +12,6 @@ fn main() {
             energy.push(j.to_digit(10).unwrap());
         }
     }
-    let mut flashes = 0;
     let mut steps = 0;
     loop {
         steps += 1;
