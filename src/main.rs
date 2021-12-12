@@ -18,12 +18,58 @@ fn main() {
             nodes.insert(origin.to_string(), vec![i.next().unwrap().to_string()]);
         }
     }
-}
-
-fn exits(n: &HashMap<String, Vec<String>>, p: &[usize]) -> Option<Vec<String>> {
-    let mut s = "start".to_string();
-    for i in p.iter() {
-        s = n.get(&s).unwrap()[*i].clone();
+    let mut paths = 0;
+    let s = "start".to_string();
+    let mut visits = Vec::new();
+    visits.push(s.clone());
+    let mut small = HashSet::new();
+    let mut candidates: Vec<usize> = Vec::new();
+    candidates.push(0);
+    candidates.push(0);
+    while visits.len() > 0 {
+        println!("{:?}. {:?}.", visits, candidates);
+        let c = candidates.last().unwrap().clone();
+        if let Some(i) = nodes.get(visits.last().unwrap()) {
+            if i.len() > c {
+                let j = &i[c];
+                if j == &"end".to_string() {
+                    paths += 1;
+                    candidates.pop();
+                    candidates.push(c + 1);
+                    continue;
+                } else {
+                    if !small.contains(j) {
+                        visits.push(j.clone());
+                        candidates.push(0);
+                        if j.chars().next().unwrap().is_lowercase() {
+                            small.insert(j);
+                        }
+                        continue;
+                    } else {
+                        candidates.pop();
+                        candidates.push(c + 1);
+                        continue;
+                    }
+                }
+            } else {
+                let e = visits.pop().unwrap();
+                if small.contains(&e) {
+                    small.remove(&e);
+                }
+                candidates.pop();
+                let d = candidates.pop().unwrap();
+                candidates.push(d + 1);
+                continue;
+            }
+        } else {
+            let e = visits.pop().unwrap();
+            if small.contains(&e) {
+                small.remove(&e);
+            }
+            candidates.pop();
+            let d = candidates.pop().unwrap();
+            candidates.push(d + 1);
+        }
     }
-    return n.get(&s).cloned();
+    println!("{}", paths);
 }
