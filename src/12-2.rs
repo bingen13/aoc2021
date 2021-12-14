@@ -18,10 +18,9 @@ fn main() {
         h.insert(origin.to_string());
         edges.push(h);
     }
-let s = "start".to_string();
-let mut small = HashMap::new();
-g
-
+    let s = "start".to_string();
+    let mut small = HashMap::new();
+    g
 }
 
 fn exits(v: &[HashSet<String>], s: &String) -> bool {
