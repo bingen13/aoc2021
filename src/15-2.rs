@@ -1,3 +1,4 @@
+use std::cmp::min;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::convert::TryInto;
@@ -25,56 +26,42 @@ fn main() {
     let mut unvisited = HashSet::new();
     for i in 0..map.len() {
         unvisited.insert(i);
+        distance.insert(i, 100000000000);
     }
-    distance.insert(start, 0);
-    while !distance.contains_key(&end) {
-        let cur = distance
-            .iter()
-            .filter(|a: &(&usize, &usize)| unvisited.contains(a.0))
-            .min_by(|a, b| a.1.cmp(b.1))
-            .unwrap();
-        let curdis = *cur.1;
-        let cur = *cur.0;
-        for i in neighbours(cur, l).iter() {
-            if unvisited.contains(i) {
-                let e = map[*i];
-                if let Some(d) = distance.get(i) {
-                    if d > &(curdis + e) {
-                        distance.insert(*i, curdis + e);
-                    }
-                } else {
-                    distance.insert(*i, curdis + e);
-                }
-            }
+    map[start] = 0;
+    distance.insert(start, map[start]);
+    let mut cur = start;
+    while unvisited.contains(&end) {
+        let curdis = *distance.get(&cur).unwrap();
+        for i in neighbours(cur, l).iter().filter(|n| unvisited.contains(n)) {
+            //println!("Checking {}.", i);
+            let e = map[*i];
+            let d = *distance.get(i).unwrap();
+            //println!("Distance: {}", distance.get(i).unwrap());
+            distance.insert(*i, min(curdis + e, d));
+            //println!("Distance: {}", distance.get(i).unwrap());
         }
         unvisited.remove(&cur);
+        cur = *unvisited
+            .iter()
+            .min_by(|a, b| distance.get(a).cmp(&distance.get(b)))
+            .unwrap();
+        //println!("Cur: {}.", cur);
     }
     println!("{:?}", distance.get(&end).unwrap());
-    /*
-        for (i, j) in map.iter().enumerate() {
-            print!("{}", j);
-            if i % 50 == 49 {
-                print!("\n");
-            }
-        }
-    */
 }
 
 fn neighbours(x: usize, l: usize) -> Vec<usize> {
     let mut n = Vec::new();
-/*
     if x > l {
         n.push(x - l);
     }
-*/
     if x < l * (l - 1) {
         n.push(x + l);
     }
-/*
     if x % l > 0 {
         n.push(x - 1);
     }
-*/
     if x % l < (l - 1) {
         n.push(x + 1);
     }
