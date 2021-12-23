@@ -25,33 +25,26 @@ fn main() {
     let end = map.len() - 1;
     let mut distance = HashMap::new();
     let mut unvisited = HashSet::new();
-    for i in 0..map.len() {
-        unvisited.insert(i);
-        distance.insert(i, 100000000000);
-    }
+    let mut visited = HashSet::new();
     map[start] = 0;
     distance.insert(start, map[start]);
     let mut cur = start;
-    while unvisited.contains(&end) {
+    while !distance.contains_key(&end)  {
         let curdis = *distance.get(&cur).unwrap();
         for i in [north(cur, l), south(cur, l), west(cur, l), east(cur, l)]
             .iter()
             .flatten()
-            .filter(|n| unvisited.contains(n))
+            .filter(|n| !visited.contains(*n))
         {
             let e = map[*i];
-            let d = *distance.get(i).unwrap();
+            let d = *distance.get(i).unwrap_or(&100000000000);
             if curdis + e < d {
                 distance.insert(*i, curdis + e);
+                unvisited.insert(*i);
             }
         }
         unvisited.remove(&cur);
-        /*
-                if unvisited.len() % 100 == 0 {
-                    print!(".");
-                    stdout().flush();
-                }
-        */
+        visited.insert(cur);
         cur = *unvisited
             .iter()
             .min_by(|a, b| distance.get(a).cmp(&distance.get(b)))
