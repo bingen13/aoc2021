@@ -1,8 +1,9 @@
-use std::cmp::min;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::convert::TryInto;
 use std::fs::read_to_string;
+use std::io::stdout;
+use std::io::Write;
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
@@ -33,39 +34,62 @@ fn main() {
     let mut cur = start;
     while unvisited.contains(&end) {
         let curdis = *distance.get(&cur).unwrap();
-        for i in neighbours(cur, l).iter().filter(|n| unvisited.contains(n)) {
-            //println!("Checking {}.", i);
+        for i in [north(cur, l), south(cur, l), west(cur, l), east(cur, l)]
+            .iter()
+            .flatten()
+            .filter(|n| unvisited.contains(n))
+        {
             let e = map[*i];
             let d = *distance.get(i).unwrap();
-            //println!("Distance: {}", distance.get(i).unwrap());
-            distance.insert(*i, min(curdis + e, d));
-            //println!("Distance: {}", distance.get(i).unwrap());
+            if curdis + e < d {
+                distance.insert(*i, curdis + e);
+            }
         }
         unvisited.remove(&cur);
+        /*
+                if unvisited.len() % 100 == 0 {
+                    print!(".");
+                    stdout().flush();
+                }
+        */
         cur = *unvisited
             .iter()
             .min_by(|a, b| distance.get(a).cmp(&distance.get(b)))
             .unwrap();
-        //println!("Cur: {}.", cur);
     }
     println!("{:?}", distance.get(&end).unwrap());
 }
 
-fn neighbours(x: usize, l: usize) -> Vec<usize> {
-    let mut n = Vec::new();
+fn north(x: usize, l: usize) -> Option<usize> {
     if x > l {
-        n.push(x - l);
+        Some(x - l)
+    } else {
+        None
     }
+}
+
+fn south(x: usize, l: usize) -> Option<usize> {
     if x < l * (l - 1) {
-        n.push(x + l);
+        Some(x + l)
+    } else {
+        None
     }
+}
+
+fn west(x: usize, l: usize) -> Option<usize> {
     if x % l > 0 {
-        n.push(x - 1);
+        Some(x - 1)
+    } else {
+        None
     }
+}
+
+fn east(x: usize, l: usize) -> Option<usize> {
     if x % l < (l - 1) {
-        n.push(x + 1);
+        Some(x + 1)
+    } else {
+        None
     }
-    n
 }
 
 fn step(m: Vec<usize>, l: usize) -> Vec<usize> {
