@@ -1,34 +1,20 @@
-use std::fs::File;
-use std::io::{self, BufRead};
-use std::path::Path;
-
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
-}
+use std::fs::read_to_string;
 
 fn main() {
-    // File hosts must exist in current path before this produces output
-    let mut entries = Vec::new();
-    if let Ok(lines) = read_lines("./input.txt") {
-        for line in lines {
-            if let Ok(ip) = line {
-                if let Ok(entry) = ip.parse::<i32>() {
-                    entries.push(entry)
-                }
+    let f = read_to_string("input.txt").unwrap();
+    let f = f.split("\n\n");
+    let mut elves = Vec::new();
+    for i in f {
+        let mut elf = 0;
+        let i = i.split("\n");
+        for j in i {
+            if j.len() > 1 {
+                elf += j.parse::<u32>().unwrap();
             }
         }
-    } else {
-        println!("File not found!")
+        elves.push(elf);
     }
-    let mut incs = 0;
-    for i in 1..entries.len() - 2 {
-        if entries[i - 1] < entries[i + 2] {
-            incs += 1;
-        }
-    }
-    println!("{}", incs);
+    elves.sort();
+    elves.reverse();
+    print!("Sum: {}.", elves[0] + elves[1] + elves[2]);
 }
