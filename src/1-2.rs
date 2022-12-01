@@ -6,7 +6,7 @@ fn main() {
     let mut elves = Vec::new();
     for i in f {
         let mut elf = 0;
-        let i = i.split("\n");
+        let i = i.split('\n');
         for j in i {
             if j.len() > 1 {
                 elf += j.parse::<u32>().unwrap();
