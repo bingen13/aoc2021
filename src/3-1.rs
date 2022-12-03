@@ -1,46 +1,32 @@
-use std::collections::HashMap;
-use std::convert::TryInto;
+use std::collections::HashSet;
 use std::fs::read_to_string;
 
 fn main() {
-    let mut truths = HashMap::new();
-    let mut lies = HashMap::new();
     let f = read_to_string("input.txt").unwrap();
-    let f = f.split("\n");
-    for value in f {
-        if value.len() == 0 {
-            break;
-        }
-        let l = value.len() - 1;
-        for (j, bit) in value.chars().enumerate() {
-            let truth = truths.entry(l - j).or_insert(0);
-            let lie = lies.entry(l - j).or_insert(0);
-            match bit {
-                '0' => *lie += 1,
-                '1' => *truth += 1,
-                _ => println!("Error! {})", bit),
+    let f = f.split('\n');
+    let mut priors = 0;
+    for i in f {
+        let mut h1 = HashSet::new();
+        let mut h2 = HashSet::new();
+        let l = i.len();
+        if l > 0 {
+            for (j, k) in i.chars().enumerate() {
+                if j < l / 2 {
+                    h1.insert(k);
+                } else {
+                    h2.insert(k);
+                }
             }
         }
-    }
-    let mut gamma = 0;
-    let mut epsilon = 0;
-
-    println!("Truths: {:?}. Lies: {:?}.", &truths, &lies);
-    for (k, v) in truths {
-        if &v > lies.get(&k).unwrap() {
-            {
-                gamma += 2_u32.pow(k.try_into().unwrap());
+        let common = h1.intersection(&h2);
+        for m in common {
+            if m.is_uppercase() {
+                priors += 27;
+            } else {
+                priors += 1;
             }
-        } else {
-            {
-                epsilon += 2_u32.pow(k.try_into().unwrap());
-            }
+            priors += m.to_lowercase().next().unwrap() as u32 - 'a' as u32;
         }
     }
-    println!(
-        "Gamma: {}. Epsilon: {}. Product: {}",
-        gamma,
-        epsilon,
-        gamma * epsilon
-    );
+    println!("{}", priors);
 }
