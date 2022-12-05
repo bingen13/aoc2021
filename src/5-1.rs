@@ -1,49 +1,40 @@
-use std::cmp::max;
-use std::cmp::min;
-use std::collections::HashMap;
 use std::fs::read_to_string;
-
-#[derive(Debug, Eq, PartialEq, Hash)]
-struct Point {
-    x: u32,
-    y: u32,
-}
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
-    let f = f.split("\n");
-    let mut points = HashMap::new();
-    for i in f {
-        if i.len() == 0 {
-            break;
-        }
-        let mut line = i.split(" -> ");
-        let mut origin = line.next().unwrap().split(",");
-        let (x1, y1) = (
-            origin.next().unwrap().parse::<u32>().unwrap(),
-            origin.next().unwrap().parse::<u32>().unwrap(),
-        );
-        let mut target = line.next().unwrap().split(",");
-        let (x2, y2) = (
-            target.next().unwrap().parse::<u32>().unwrap(),
-            target.next().unwrap().parse::<u32>().unwrap(),
-        );
-        if x1 == x2 {
-            for j in min(y1, y2)..max(y1, y2) + 1 {
-                *points.entry(Point { x: x1, y: j }).or_insert(0) += 1;
-            }
-        }
-        if y1 == y2 {
-            for j in min(x1, x2)..max(x1, x2) + 1 {
-                *points.entry(Point { x: j, y: y1 }).or_insert(0) += 1;
+    let mut f = f.split("\n\n");
+    let stacks = f.next().unwrap();
+    let moves = f.next().unwrap();
+    let mut blocks = Vec::new();
+    for _i in 0..9 {
+        blocks.push(Vec::new());
+    }
+
+    for i in stacks.split('\n') {
+        for (j, k) in i.chars().enumerate() {
+            if (j % 4 == 1) & !k.is_numeric() & (k != ' ') {
+                blocks[j / 4].push(k);
             }
         }
     }
-    let mut overlaps = 0;
-    for (_, j) in points {
-        if j > 1 {
-            overlaps += 1;
+    for i in 0..blocks.len() {
+        blocks[i].reverse();
+    }
+    for i in moves.split('\n') {
+        if !i.is_empty() {
+            let mut i = i.split(' ');
+            let n1 = i.nth(1).unwrap().parse::<usize>().unwrap();
+            let n2 = i.nth(1).unwrap().parse::<usize>().unwrap();
+            let n3 = i.nth(1).unwrap().parse::<usize>().unwrap();
+            for _ in 0..n1 {
+                let elem = blocks[n2 - 1].pop().unwrap();
+                blocks[n3 - 1].push(elem);
+            }
         }
     }
-    println!("{}", overlaps);
+    let mut result = String::new();
+    for i in 0..blocks.len() {
+        result.push(blocks[i].pop().unwrap());
+    }
+    println!("{}", result);
 }
