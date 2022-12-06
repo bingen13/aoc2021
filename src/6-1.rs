@@ -1,37 +1,21 @@
-use std::collections::BTreeMap;
+use std::collections::HashSet;
 use std::fs::read_to_string;
 
 fn main() {
-    let mut f = read_to_string("input.txt").unwrap();
-    f.retain(|c| !c.is_whitespace());
-    let f = f.split(",");
-    let mut fishes = Vec::new();
-    for i in f {
-        fishes.push(i.parse::<u64>().unwrap());
+    let f = read_to_string("input.txt").unwrap();
+    let mut v = Vec::new();
+    for i in f.chars() {
+        v.push(i);
     }
-    let mut fishmap: BTreeMap<u64, u64> = BTreeMap::new();
-    for i in fishes.iter() {
-        *fishmap.entry(*i).or_insert(0) += 1;
-    }
-    for _ in 0..80 {
-        let sum: u64 = fishmap.values().sum();
-        println!("{}", sum);
-        fishmap = day(fishmap);
-    }
-    let sum: u64 = fishmap.values().sum();
-    println!("{}", sum);
-}
-
-fn day(f: BTreeMap<u64, u64>) -> BTreeMap<u64, u64> {
-    let mut g = BTreeMap::new();
-
-    for (i, j) in f {
-        if i == 0 {
-            g.insert(6, j);
-            g.insert(8, j);
-        } else {
-            *g.entry(i - 1).or_insert(0) += j;
+    for i in 3..v.len() {
+        let mut h = HashSet::new();
+        h.insert(v[i - 3]);
+        h.insert(v[i - 2]);
+        h.insert(v[i - 1]);
+        h.insert(v[i]);
+        if h.len() == 4 {
+            println!("{}", i + 1);
+            break;
         }
     }
-g
 }
