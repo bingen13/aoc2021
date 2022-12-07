@@ -41,7 +41,6 @@ fn main() {
         }
     }
     let mut acc = 0;
-    println!("{:?}", dirs);
     for (_, j) in &dirs {
         let mut s = j.0;
         let mut v = j.1.clone();

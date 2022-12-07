@@ -1,28 +1,69 @@
+use std::collections::HashMap;
 use std::fs::read_to_string;
 
 fn main() {
-    let mut f = read_to_string("input.txt").unwrap();
-    f.retain(|c| !c.is_whitespace());
-    let f = f.split(",");
-    let mut positions = Vec::new();
+    let f = read_to_string("input.txt").unwrap();
+    let f = f.split('\n');
+    let mut cwd: Vec<(String, u64, Vec<String>)> = Vec::new();
+    let mut dirs: HashMap<String, (u64, Vec<String>)> = HashMap::new();
     for i in f {
-        positions.push(i.parse::<i64>().unwrap());
-    }
-    positions.sort();
+        let v: Vec<_> = i.split(' ').collect();
 
-    let mut fv = Vec::new();
-    for i in positions[0]..=positions[positions.len() - 1] {
-        let mut fuel = 0;
-
-        for j in positions.iter() {
-            fuel += calc(i, *j);
+        // termination condition.
+        if v[0].is_empty() {
+            let elem = cwd.pop().unwrap();
+            dirs.insert(elem.0, (elem.1, elem.2));
+            break;
         }
-        fv.push(fuel);
+        // Command.
+        if v[0] == "$" {
+            if v[1] == "cd" {
+                if v[2] != ".." {
+                    if !cwd.is_empty() {
+                        let mut last = cwd.pop().unwrap();
+                        let prev = last.0.clone() + "/";
+                        last.2.push(prev.clone() + v[2]);
+                        cwd.push(last);
+                        cwd.push((prev + v[2], 0, Vec::new()));
+                    } else {
+                        cwd.push((v[2].to_string(), 0, Vec::new()));
+                    }
+                } else {
+                    let elem = cwd.pop().unwrap();
+                    dirs.insert(elem.0, (elem.1, elem.2));
+                }
+            }
+        } else if v[0] != "dir" {
+            let n = v[0].parse::<u64>().unwrap();
+            let mut last = cwd.pop().unwrap();
+            last.1 += n;
+            cwd.push(last);
+        }
     }
-    println!("{:?}", fv.iter().min().unwrap());
-}
+    let elem = cwd[0].clone();
+    dirs.insert(elem.0, (elem.1, elem.2));
 
-fn calc(a: i64, b: i64) -> i64 {
-    let x = (a - b).abs();
-    (x * (x + 1)) / 2
+    let mut acc = 0;
+    let mut sizes = HashMap::new();
+    for (i, j) in &dirs {
+        let mut s = j.0;
+        let mut v = j.1.clone();
+        while !v.is_empty() {
+            let e = v.pop().unwrap();
+            let k2 = dirs.get(&e).unwrap();
+            s += k2.0;
+            v.append(&mut k2.1.clone());
+        }
+        if s < 100000 {
+            acc += s;
+        }
+        sizes.insert(i.to_string(), s);
+    }
+    println!("{}", acc);
+    let size = sizes.get(&"/".to_string()).unwrap();
+    println!("{}", size);
+    let capacity: u64 = 40000000;
+    let needed_space = size - capacity;
+    let result = sizes.values().filter(|&n| n > &needed_space).min().unwrap();
+    println!("{}", result);
 }
