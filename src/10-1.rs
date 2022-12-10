@@ -24,20 +24,12 @@ fn main() {
             _ => (),
         }
     }
-    let mut output = String::new();
+    let mut result = 0;
     for (i, j) in state {
-        if (j - ((i - 1) % 40)).abs() <= 1 {
-            output.push('#');
-        } else {
-            output.push('.');
+        if (i == 20) | ((i > 20) & ((i - 20) % 40 == 0)) {
+            result += i * j;
         }
     }
 
-    let mut c = output.chars();
-    for i in 0..240 {
-        if i % 40 == 0 {
-            println!();
-        }
-            print!("{}", c.next().unwrap());
-    }
+    println!("{}", result);
 }
