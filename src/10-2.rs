@@ -38,6 +38,6 @@ fn main() {
         if i % 40 == 0 {
             println!();
         }
-            print!("{}", c.next().unwrap());
+        print!("{}", c.next().unwrap());
     }
 }
