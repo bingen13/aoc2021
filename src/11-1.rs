@@ -1,92 +1,72 @@
+use regex::Regex;
 use std::fs::read_to_string;
 
 fn main() {
+    let re_digits = Regex::new(r"(\d+)").unwrap();
+    let re_op = Regex::new(r"new = old (\*|\+) (old|\d+)").unwrap();
     let f = read_to_string("input.txt").unwrap();
-    let f = f.split("\n");
-    let mut energy = Vec::new();
+    let f = f.split("\n\n");
+    let mut v = Vec::new();
     for i in f {
-        if i.len() == 0 {
+        if i.is_empty() {
             break;
         }
-        for j in i.chars() {
-            energy.push(j.to_digit(10).unwrap());
-        }
+        let mut i = i.split('\n');
+        i.next();
+        let items: Vec<_> = re_digits
+            .captures_iter(i.next().unwrap())
+            .map(|n| n[1].parse::<usize>().unwrap())
+            .collect();
+        let cap = re_op.captures(i.next().unwrap()).unwrap();
+        let op = if &cap[2] == "old" {
+            ("**".to_string(), 0)
+        } else {
+            (cap[1].to_string(), cap[2].parse::<usize>().unwrap())
+        };
+        let divisible = re_digits.captures(i.next().unwrap()).unwrap()[1]
+            .parse::<usize>()
+            .unwrap();
+        let true_test = re_digits.captures(i.next().unwrap()).unwrap()[1]
+            .parse::<usize>()
+            .unwrap();
+        let false_test = re_digits.captures(i.next().unwrap()).unwrap()[1]
+            .parse::<usize>()
+            .unwrap();
+        v.push((items, op, divisible, true_test, false_test));
     }
-    let mut flashes = 0;
-    for i in 0..100 {
-        let f;
-        f = step(energy);
-        flashes += f.1;
-        energy = f.0;
+    let mut inspect = Vec::new();
+    for _ in 0..v.len() {
+        inspect.push(0);
     }
 
-    println!("Flashes: {}.", flashes);
-}
-
-fn step(mut v: Vec<u32>) -> (Vec<u32>, u32) {
-    let mut flashes = 0;
-    for i in v.iter_mut() {
-        *i += 1;
-    }
-    while let Some(i) = v.iter().position(|elem| elem > &9) {
-        // println!("I: {}", &i);
-        let top = i < 10;
-        let left = i % 10 == 0;
-        let right = i % 10 == 9;
-        let bottom = i > 89;
-        flashes += 1;
-        v[i] = 0;
-        // Switch one row up.
-        if !top {
-            if !left {
-                if v[i - 11] > 0 {
-                    v[i - 11] += 1;
+    for _ in 0..20 {
+        for i in 0..v.len() {
+            let items = v[i].0.clone();
+            let op = v[i].1.clone();
+            let divisible = v[i].2;
+            let true_test = v[i].3;
+            let false_test = v[i].4;
+            for j in 0..items.len() {
+                inspect[i] += 1;
+                let mut item = items[j];
+                let (op, n) = op.clone();
+                match op.as_str() {
+                    "+" => item += n,
+                    "*" => item *= n,
+                    "**" => item *= item,
+                    _ => (),
+                }
+                item /= 3;
+                if item % divisible == 0 {
+                    v[true_test].0.push(item);
+                } else {
+                    v[false_test].0.push(item);
                 }
             }
-            if v[i - 10] > 0 {
-                v[i - 10] += 1;
-            }
-            if !right {
-                if v[i - 9] > 0 {
-                    v[i - 9] += 1;
-                }
-            }
-        }
-        // Same row.
-        if !left {
-            if v[i - 1] > 0 {
-                v[i - 1] += 1;
-            }
-        }
-        if !right {
-            if v[i + 1] > 0 {
-                v[i + 1] += 1;
-            }
-        }
-        // One row down.
-        if !bottom {
-            if !left {
-                if v[i + 9] > 0 {
-                    v[i + 9] += 1;
-                }
-            }
-            if v[i + 10] > 0 {
-                v[i + 10] += 1;
-            }
-            if !right {
-                if v[i + 11] > 0 {
-                    v[i + 11] += 1;
-                }
-            }
+            v[i].0 = Vec::new();
         }
     }
-    /*
-        for i in 0..100 {
-            print!("{}", &v[i]);
-            if i % 10 == 9 {
-                print!("\n");
-            }
-        }
-    */
-    return (v, flashes);
+    inspect.sort();
+    inspect.reverse();
+    println!("{}", inspect[0] * inspect[1]);
 }
