@@ -1,81 +1,76 @@
-use std::collections::HashMap;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs::read_to_string;
+
+fn neighbour(x: u32, y: u32) -> Vec<(u32, u32)> {
+    let mut v = Vec::new();
+    match (x, y) {
+        (0, 0) => {
+            v.push((0, 1));
+            v.push((1, 0));
+        }
+        (0, 1..) => {
+            v.push((0, y - 1));
+            v.push((0, y + 1));
+            v.push((1, y));
+        }
+        (1.., 0) => {
+            v.push((x - 1, 0));
+            v.push((x + 1, 0));
+            v.push((x, 1));
+        }
+        (1.., 1..) => {
+            v.push((x - 1, y));
+            v.push((x + 1, y));
+            v.push((x, y - 1));
+            v.push((x, y + 1));
+        }
+    }
+    return v;
+}
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
-    let f = f.split("\n");
-    let mut nodes: HashMap<String, Vec<String>> = HashMap::new();
-    for i in f {
-        if i.len() == 0 {
-            break;
-        }
-        let mut i = i.split("-");
-        let origin = i.next().unwrap();
-        let target = i.next().unwrap();
-        if let Some(n) = nodes.get_mut(&origin.to_string()) {
-            n.push(target.to_string());
+    let mut x = 0;
+    let mut y = 0;
+    let mut map = HashMap::new();
+    let mut start = (0, 0);
+    let mut end = (0, 0);
+    for i in f.chars() {
+        if i == '\n' {
+            x += 1;
+            y = 0;
         } else {
-            nodes.insert(origin.to_string(), vec![target.to_string()]);
-        }
-        if let Some(n) = nodes.get_mut(&target.to_string()) {
-            n.push(origin.to_string());
-        } else {
-            nodes.insert(target.to_string(), vec![origin.to_string()]);
+            if (('a' as u32)..=('z' as u32)).contains(&(i as u32)) {
+                map.insert((x, y), (i as u32 - 'a' as u32));
+            } else if i == 'S' {
+                start = (x, y);
+                map.insert((x, y), 0);
+            } else if i == 'E' {
+                end = (x, y);
+                map.insert((x, y), 26);
+            }
+            y += 1;
         }
     }
-    let mut paths = 0;
-    let s = "start".to_string();
-    let mut visits = Vec::new();
-    visits.push(s.clone());
-    let mut small = HashSet::new();
-    small.insert("start".to_string());
-    let mut candidates: Vec<usize> = Vec::new();
-    candidates.push(0);
-    candidates.push(0);
-    while visits.len() > 0 {
-        let c = candidates.last().unwrap().clone();
-        if let Some(i) = nodes.get(visits.last().unwrap()) {
-            if i.len() > c {
-                let j = &i[c];
-                if j == &"end".to_string() {
-                    paths += 1;
-                    candidates.pop();
-                    candidates.push(c + 1);
-                    continue;
-                } else {
-                    if !small.contains(j) {
-                        visits.push(j.clone());
-                        candidates.push(0);
-                        if j.chars().next().unwrap().is_lowercase() {
-                            small.insert(j.clone());
-                        }
-                        continue;
-                    } else {
-                        candidates.pop();
-                        candidates.push(c + 1);
-                        continue;
-                    }
+    let mut visit = Vec::new();
+    visit.push(start);
+    let mut visited = HashSet::new();
+    let mut steps = 0;
+    while !visited.contains(&end) {
+        let mut newq = Vec::new();
+        for i in visit {
+            for j in neighbour(i.0, i.1) {
+                if !visited.contains(&j)
+                    && map.contains_key(&j)
+                    && (map.get(&j).unwrap() <= &(map.get(&i).unwrap() + 1))
+                {
+                    visited.insert(j);
+                    newq.push(j);
                 }
-            } else {
-                let e = visits.pop().unwrap();
-                if small.contains(&e) {
-                    small.remove(&e);
-                }
-                candidates.pop();
-                let d = candidates.pop().unwrap();
-                candidates.push(d + 1);
-                continue;
             }
-        } else {
-            let e = visits.pop().unwrap();
-            if small.contains(&e) {
-                small.remove(&e);
-            }
-            candidates.pop();
-            let d = candidates.pop().unwrap();
-            candidates.push(d + 1);
         }
+        visit = newq;
+        steps += 1;
     }
-    println!("{}", paths);
+    println!("{}", steps);
 }
