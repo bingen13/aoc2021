@@ -25,7 +25,7 @@ fn neighbour(x: u32, y: u32) -> Vec<(u32, u32)> {
             v.push((x, y + 1));
         }
     }
-    return v;
+    v
 }
 
 fn main() {
@@ -33,17 +33,15 @@ fn main() {
     let mut x = 0;
     let mut y = 0;
     let mut map = HashMap::new();
-    let mut start = (0, 0);
     let mut end = (0, 0);
     for i in f.chars() {
         if i == '\n' {
             x += 1;
             y = 0;
         } else {
-            if (('a' as u32)..=('z' as u32)).contains(&(i as u32)) {
-                map.insert((x, y), (i as u32 - 'a' as u32));
+            if ('a'..='z').contains(&i) {
+                map.insert((x, y), i as u32 - 'a' as u32);
             } else if i == 'S' {
-                start = (x, y);
                 map.insert((x, y), 0);
             } else if i == 'E' {
                 end = (x, y);
@@ -52,8 +50,7 @@ fn main() {
             y += 1;
         }
     }
-    let mut visit = Vec::new();
-    visit.push(end);
+    let mut visit = vec![end];
     let mut visited = HashSet::new();
     let mut steps = 0;
     'major: loop {
