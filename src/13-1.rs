@@ -1,95 +1,94 @@
-use std::collections::HashSet;
 use std::fs::read_to_string;
 
-// A point.
-#[derive(Debug, Hash, Eq, PartialEq)]
-struct Point {
-    x: u32,
-    y: u32,
+#[derive(Debug)]
+enum Item {
+    N(u32),
+    O,
+    C,
 }
 
-impl Point {
-    fn fold(&self, instruction: &(bool, u32)) -> Point {
-        let x;
-        let y;
-        let h = instruction.0;
-        let l = instruction.1;
-        if h {
-            x = self.x;
-            if self.y > l {
-                y = (2 * l) - self.y;
+enum Elem {
+    List(Vec<Elem>),
+    Digit(u32),
+    Error,
+}
+
+fn norm(p: &[Item]) -> Elem {
+    let r: Elem;
+    match p {
+        [] => {
+            r = Elem::Error;
+        }
+        [n] => {
+            if let Item::N(m) = n {
+                r = Elem::Digit(*m);
             } else {
-                y = self.y;
-            }
-        } else {
-            y = self.y;
-            if self.x > l {
-                x = (2 * l) - self.x;
-            } else {
-                x = self.x;
+                r = Elem::Error;
             }
         }
-        Point { x: x, y: y }
+        [Item::C, _] => {
+            r = Elem::Error;
+        }
+        [Item::O, Item::C] => {
+            r = Elem::List(vec![]);
+        }
+        [Item::O, rest @ .., Item::C] => {
+            r = Elem::List(vec![norm(rest)]);
+        }
+[Item::N(n), rest @ ..] => {
+let mut v = vec![n];
+let v2 = vec![norm(rest)];
+v.extend(v2);
+r = 
+
+
     }
+    Elem::Error
+}
+
+fn parse(s: &str) -> Vec<Item> {
+    let mut digit: Option<u32> = None;
+    let mut v = Vec::new();
+    for i in s.chars() {
+        match i {
+            '[' => v.push(Item::O),
+            ']' => {
+                if let Some(d) = digit {
+                    v.push(Item::N(d));
+                    digit = None;
+                }
+                v.push(Item::C);
+            }
+            ',' => {
+                if let Some(d) = digit {
+                    v.push(Item::N(d));
+                    digit = None;
+                }
+            }
+            '0'..='9' => {
+                if let Some(mut d) = digit {
+                    d *= 10;
+                    d += i.to_digit(10).unwrap();
+                    digit = Some(d);
+                } else {
+                    digit = Some(i.to_digit(10).unwrap());
+                }
+            }
+            _ => println!("Well, fuck."),
+        }
+    }
+    v
 }
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
-    let mut f = f.split("\n\n");
-    let points = f.next().unwrap();
-    let points = points.split("\n");
-    let instructions = f.next().unwrap();
-    let mut sheet: HashSet<Point> = HashSet::new();
-    for i in points {
-        let mut p = i.split(",");
-        sheet.insert(Point {
-            x: p.next().unwrap().parse::<u32>().unwrap(),
-            y: p.next().unwrap().parse::<u32>().unwrap(),
-        });
-    }
-    let instructions = instructions.split("\n");
-    let mut operations = Vec::new();
-    for i in instructions {
-        for j in i.split_whitespace().last() {
-            if j.len() > 0 {
-                let mut k = j.split("=");
-                let horizontal = match k.next().unwrap() {
-                    "x" => false,
-                    "y" => true,
-                    _ => {
-                        println!("Error.");
-                        false
-                    }
-                };
-                let line = k.next().unwrap().parse::<u32>().unwrap();
-                operations.push((horizontal, line));
-            }
-        }
-    }
-    let i = operations[0];
-    sheet = sheet.iter().map(|p| p.fold(&i)).collect();
-    println!("{}.", sheet.len());
-}
-
-fn printer(s: &HashSet<Point>) {
-    let m = s
-        .iter()
-        .map(|p| p.x)
-        .reduce(|a, b| if a > b { a } else { b })
-        .unwrap();
-    let n = s
-        .iter()
-        .map(|p| p.y)
-        .reduce(|a, b| if a > b { a } else { b })
-        .unwrap();
-    for i in 0..=n {
-        for j in 0..=m {
-            if s.contains(&Point { x: j, y: i }) {
-                print!("#");
-            } else {
-                print!(".");
-            }
-        }
-        print!("\n");
+    let f = f.split("\n\n");
+    for i in f {
+        let mut i = i.split('\n');
+        let p1 = i.next().unwrap();
+        let p2 = i.next().unwrap();
+        let p1 = parse(p1);
+        let p2 = parse(p2);
+        println!("{:?}", p2);
     }
 }
