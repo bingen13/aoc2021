@@ -1,54 +1,76 @@
-use std::collections::HashMap;
+use regex::Regex;
+use std::cmp::{max, min};
+use std::collections::HashSet;
 use std::fs::read_to_string;
 
-fn main() {
-    let f = read_to_string("input.txt").unwrap();
-    let mut f = f.split("\n\n");
-    let mut start = f.next().unwrap().to_string().chars().collect::<Vec<char>>();
-    let mut transforms = HashMap::new();
-    for i in f.next().unwrap().split("\n") {
-        if i.len() == 0 {
-            break;
-        }
-        let mut j = i.split(" -> ");
-        let origin = j.next().unwrap().to_string();
-        let target = j.next().unwrap().to_string();
-        transforms.insert(origin, target);
-    }
-    for _ in 0..10 {
-        let mut result = Vec::new();
-        result.push(*start.first().unwrap());
-        for i in start[..].windows(2) {
-            let c1 = i[0];
-            let c2 = i[1];
-            let mut s = String::new();
-            s.push(c1);
-            s.push(c2);
-            if let Some(inter) = transforms.get(&s) {
-                result.push(inter.chars().next().unwrap());
-            }
-            result.push(c2);
-        }
-        start = result.clone();
-    }
-    let mut h: Vec<(char, u64)> = Vec::new();
-    for i in start.iter() {
-        if let Some(j) = h.iter().position(|x| x.0 == *i) {
-            h[j].1 += 1;
-        } else {
-            h.push((*i, 1));
-        }
-    }
-    let m1 = h
-        .iter()
-        .map(|x| x.1)
-        .reduce(|x, y| if x > y { x } else { y })
-        .unwrap();
-    let m2 = h
-        .iter()
-        .map(|x| x.1)
-        .reduce(|x, y| if x < y { x } else { y })
-        .unwrap();
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+struct Point {
+    x: u32,
+    y: u32,
+}
 
-    println!("{}, {}, {}.", m1, m2, m1 - m2);
+fn draw_line(p1: Point, p2: Point, map: &mut HashSet<Point>) {
+    if p1.x == p2.x {
+        let x = p1.x;
+        for i in min(p1.y, p2.y)..=max(p1.y, p2.y) {
+            map.insert(Point { x, y: i });
+        }
+    } else if p1.y == p2.y {
+        let y = p1.y;
+        for i in min(p1.x, p2.x)..=max(p1.x, p2.x) {
+            map.insert(Point { x: i, y });
+        }
+    }
+}
+
+fn place_sand(map: &mut HashSet<Point>, lowest: u32) -> bool {
+    let mut x = 500;
+    let mut y = 0;
+    while y <= lowest {
+        let (left, down, right) = (
+            Point { x: x - 1, y: y + 1 },
+            Point { x, y: y + 1 },
+            Point { x: x + 1, y: y + 1 },
+        );
+        if !map.contains(&down) {
+            y += 1;
+        } else if !map.contains(&left) {
+            y += 1;
+            x -= 1;
+        } else if !map.contains(&right) {
+            y += 1;
+            x += 1;
+        } else {
+            map.insert(Point { x, y });
+            return true;
+        }
+    }
+    false
+}
+
+fn main() {
+    let re = Regex::new(r"(\d*),(\d*)").unwrap();
+    let f = read_to_string("input.txt").unwrap();
+    let f = f.split("\n");
+    let mut rocks: HashSet<Point> = HashSet::new();
+    for i in f {
+        let mut prev: Option<Point> = None;
+        for j in re.captures_iter(i) {
+            let p = Point {
+                x: j[1].parse::<u32>().unwrap(),
+                y: j[2].parse::<u32>().unwrap(),
+            };
+            if let Some(p2) = prev {
+                draw_line(p2, p, &mut rocks);
+            }
+            prev = Some(p);
+        }
+    }
+    // Find the lowest unit of rock.
+    let lowest = rocks.iter().max_by_key(|p| p.y).unwrap().y;
+    let mut grains = 0;
+    while place_sand(&mut rocks, lowest) {
+        grains += 1;
+    }
+    println!("{}", grains);
 }
