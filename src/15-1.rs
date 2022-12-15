@@ -1,75 +1,60 @@
-use std::collections::HashMap;
-use std::collections::HashSet;
-use std::convert::TryInto;
+use regex::Regex;
 use std::fs::read_to_string;
 
+fn distance(x: &(i32, i32), y: &(i32, i32)) -> i32 {
+    (x.0 - y.0).abs() + (x.1 - y.1).abs()
+}
+
 fn main() {
+    let re = Regex::new(r"x=(-?\d*), y=(-?\d*):.*x=(-?\d*), y=(-?\d*)").unwrap();
     let f = read_to_string("input.txt").unwrap();
-    let f = f.split("\n");
-    let mut map: Vec<usize> = Vec::new();
-    let mut l = 0;
+    let f = f.split('\n');
+    let mut sensors = Vec::new();
+    let mut beacons = Vec::new();
+    let mut min_x = 0;
+    let mut max_x = 0;
+    let mut max_d = 0;
     for i in f {
-        if i.len() == 0 {
-            break;
-        }
-        l = i.len();
-        for j in i.chars() {
-            map.push(j.to_digit(10).unwrap().try_into().unwrap());
+        for cap in re.captures_iter(i) {
+            let sensor = (&cap[1], &cap[2]);
+            let beacon = (&cap[3], &cap[4]);
+            let sensor = (
+                sensor.0.parse::<i32>().unwrap(),
+                sensor.1.parse::<i32>().unwrap(),
+            );
+            let beacon = (
+                beacon.0.parse::<i32>().unwrap(),
+                beacon.1.parse::<i32>().unwrap(),
+            );
+            if sensor.0 < min_x {
+                min_x = beacon.0;
+            }
+            if sensor.0 > max_x {
+                max_x = beacon.0;
+            }
+            let d = distance(&sensor, &beacon);
+            if d > max_d {
+                max_d = d;
+            }
+            sensors.push((sensor, d));
+            beacons.push(beacon);
         }
     }
-    let start = 0;
-    let end = map.len() - 1;
-    let mut total = 0;
-    let mut distance = HashMap::new();
-    let mut visited = HashSet::new();
-    distance.insert(start, 0);
-    while !distance.contains_key(&end) {
-        let cur = distance
-            .iter()
-            .filter(|a: &(&usize, &usize)| !visited.contains(a.0))
-            .min_by(|a, b| a.1.cmp(b.1))
-            .unwrap()
-            .clone();
-        let curdis = cur.1.clone();
-        let cur = cur.0.clone();
-        for i in neighbours(cur, l).iter() {
-            if !visited.contains(i) {
-                let e = map[*i];
-                if let Some(d) = distance.get(&i) {
-                    if d > &(curdis + e) {
-                        distance.insert(*i, curdis + e);
-                    }
-                } else {
-                    distance.insert(*i, curdis + e);
-                }
+    let y = 2000000;
+    let mut count = 0;
+    'outer: for i in (min_x - max_d)..=(max_x + max_d) {
+        let p1 = (i, y);
+        if beacons.iter().any(|x| (x.0, x.1) == p1) {
+            continue;
+        }
+        for j in &sensors {
+            let p2 = (j.0 .0, j.0 .1);
+            let d = j.1;
+            if distance(&p1, &p2) <= d {
+                count += 1;
+                continue 'outer;
             }
         }
-        visited.insert(cur);
     }
-    println!("{:?}", distance.get(&end).unwrap());
-}
-
-fn neighbours(x: usize, l: usize) -> Vec<usize> {
-    let mut n = Vec::new();
-    if x > l {
-        n.push(x - l);
-    }
-    if x < l * (l - 1) {
-        n.push(x + l);
-    }
-    if x % l > 0 {
-        n.push(x - 1);
-    }
-    if x % l < (l - 1) {
-        n.push(x + 1);
-    }
-    n
-}
-
-fn step(m: Vec<usize>) -> Vec<usize> {
-    let mut n = Vec::new();
-    for i in m.iter() {
-        n.push((i + 1) % 10);
-    }
-    n
+    println!("{}", count);
 }
