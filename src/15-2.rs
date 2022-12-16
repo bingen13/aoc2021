@@ -69,7 +69,6 @@ fn main() {
                                         );
                     */
                     found = false;
-                    break;
                 }
             }
             if found {
