@@ -1,66 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::fs::read_to_string;
 
-fn neighbours_xy(cube: (u32, u32, u32), cubes: &HashSet<(u32, u32, u32)>) -> u32 {
-    let mut n = 0;
-    let x = cube.0;
-    let y = cube.1;
-    let z = cube.2;
-    if x > 0 && cubes.contains(&(x - 1, y, z)) {
-        n += 1;
-    }
-    if cubes.contains(&(x + 1, y, z)) {
-        n += 1;
-    }
-    if y > 0 && cubes.contains(&(x, y - 1, z)) {
-        n += 1;
-    }
-    if cubes.contains(&(x, y + 1, z)) {
-        n += 1;
-    }
-    4 - n
-}
-
-fn neighbours_xz(cube: (u32, u32, u32), cubes: &HashSet<(u32, u32, u32)>) -> u32 {
-    let mut n = 0;
-    let x = cube.0;
-    let y = cube.1;
-    let z = cube.2;
-    if x > 0 && cubes.contains(&(x - 1, y, z)) {
-        n += 1;
-    }
-    if cubes.contains(&(x + 1, y, z)) {
-        n += 1;
-    }
-    if z > 0 && cubes.contains(&(x, y, z - 1)) {
-        n += 1;
-    }
-    if cubes.contains(&(x, y, z + 1)) {
-        n += 1;
-    }
-    4 - n
-}
-
-fn neighbours_yz(cube: (u32, u32, u32), cubes: &HashSet<(u32, u32, u32)>) -> u32 {
-    let mut n = 0;
-    let x = cube.0;
-    let y = cube.1;
-    let z = cube.2;
-    if y > 0 && cubes.contains(&(x, y - 1, z)) {
-        n += 1;
-    }
-    if cubes.contains(&(x, y + 1, z)) {
-        n += 1;
-    }
-    if z > 0 && cubes.contains(&(x, y, z - 1)) {
-        n += 1;
-    }
-    if cubes.contains(&(x, y, z + 1)) {
-        n += 1;
-    }
-    4 - n
-}
-
 fn neighbours(cube: (u32, u32, u32), cubes: &HashSet<(u32, u32, u32)>) -> u32 {
     let mut n = 0;
     let x = cube.0;
@@ -142,45 +82,72 @@ fn main() {
         }
     }
     println!("{}, {}, {}.", xy.len(), xz.len(), yz.len());
-    let mut checked = HashMap::new();
+    let mut exterior = HashSet::new();
+
     for (i, j) in xy.iter() {
         let (x, y) = i;
         let (z1, z2) = j;
-        checked.insert((x, y, z1), vec![neighbours_xy((*x, *y, *z1), &cubes)]);
-        checked.insert((x, y, z2), vec![neighbours_xy((*x, *y, *z2), &cubes)]);
+        exterior.insert((x, y, z1));
+        exterior.insert((x, y, z2));
     }
     for (i, j) in xz.iter() {
         let (x, z) = i;
         let (y1, y2) = j;
-        if let Some(v) = checked.get_mut(&(x, y1, z)) {
-            v.push(neighbours_xz((*x, *y1, *z), &cubes));
-        } else {
-            checked.insert((x, y1, z), vec![neighbours_xz((*x, *y1, *z), &cubes)]);
-        }
-        if let Some(v) = checked.get_mut(&(x, y2, z)) {
-            v.push(neighbours_xz((*x, *y2, *z), &cubes));
-        } else {
-            checked.insert((x, y2, z), vec![neighbours_xz((*x, *y2, *z), &cubes)]);
-        }
+        exterior.insert((x, y1, z));
+        exterior.insert((x, y2, z));
     }
     for (i, j) in yz.iter() {
         let (y, z) = i;
         let (x1, x2) = j;
-        if let Some(v) = checked.get_mut(&(x1, y, z)) {
-            v.push(neighbours_xy((*x1, *y, *z), &cubes));
-        } else {
-            checked.insert((x1, y, z), vec![neighbours_xy((*x1, *y, *z), &cubes)]);
-        }
-        if let Some(v) = checked.get_mut(&(x2, y, z)) {
-            v.push(neighbours_xy((*x2, *y, *z), &cubes));
-        } else {
-            checked.insert((x2, y, z), vec![neighbours_xy((*x2, *y, *z), &cubes)]);
-        }
+        exterior.insert((x1, y, z));
+        exterior.insert((x2, y, z));
     }
-    println!("{}", checked.len());
     edges = 0;
-    for (_, i) in checked {
-        edges += i.iter().max().unwrap()+1;
+    for c in exterior {
+        let (x, y, z) = c;
+        let mut points = Vec::new();
+        if x > &0 {
+            points.push((*x - 1, *y, *z));
+        }
+        points.push((*x + 1, *y, *z));
+        if y > &0 {
+            points.push((*x, *y - 1, *z));
+        }
+        points.push((*x, *y + 1, *z));
+        if z > &0 {
+            points.push((*x, *y, *z - 1));
+        }
+        points.push((*x, *y, *z + 1));
+        for p in points {
+            let (x, y, z) = p;
+            if let Some(zz) = xy.get(&(x, y)) {
+                if (z < zz.0) || (z > zz.1) {
+                    edges += 1;
+                    continue;
+                }
+            } else {
+                edges += 1;
+                continue;
+            }
+            if let Some(yy) = xz.get(&(x, z)) {
+                if (y < yy.0) || (y > yy.1) {
+                    edges += 1;
+                    continue;
+                }
+            } else {
+                edges += 1;
+                continue;
+            }
+            if let Some(xx) = yz.get(&(y, z)) {
+                if (x < xx.0) || (x > xx.1) {
+                    edges += 1;
+                    continue;
+                }
+            } else {
+                edges += 1;
+                continue;
+            }
+        }
     }
     println!("{}", edges);
 }
