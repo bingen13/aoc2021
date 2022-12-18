@@ -37,7 +37,7 @@ fn main() {
         }
         let i = i.split(',');
         if let [n1, n2, n3] = i.map(|x| x.parse::<u32>().unwrap()).collect::<Vec<_>>()[..] {
-            cubes.insert((n1, n2, n3));
+            cubes.insert((n1 + 1, n2 + 1, n3 + 1));
         }
     }
     let mut edges = 0;
@@ -52,72 +52,51 @@ fn main() {
         let (x, y, z) = c;
         if let Some(oxy) = xy.get_mut(&(*x, *y)) {
             if z < &oxy.0 {
-                (*oxy).0 = *z;
+                oxy.0 = *z;
             }
             if z > &oxy.1 {
-                (*oxy).1 = *z;
+                oxy.1 = *z;
             }
         } else {
             xy.insert((*x, *y), (*z, *z));
         }
         if let Some(oxz) = xz.get_mut(&(*x, *z)) {
             if y < &oxz.0 {
-                (*oxz).0 = *y;
+                oxz.0 = *y;
             }
             if y > &oxz.1 {
-                (*oxz).1 = *y;
+                oxz.1 = *y;
             }
         } else {
             xz.insert((*x, *z), (*y, *y));
         }
         if let Some(oyz) = yz.get_mut(&(*y, *z)) {
             if x < &oyz.0 {
-                (*oyz).0 = *x;
+                oyz.0 = *x;
             }
             if x > &oyz.1 {
-                (*oyz).1 = *x;
+                oyz.1 = *x;
             }
         } else {
             yz.insert((*y, *z), (*x, *x));
         }
     }
-    println!("{}, {}, {}.", xy.len(), xz.len(), yz.len());
-    let mut exterior = HashSet::new();
-
-    for (i, j) in xy.iter() {
-        let (x, y) = i;
-        let (z1, z2) = j;
-        exterior.insert((x, y, z1));
-        exterior.insert((x, y, z2));
-    }
-    for (i, j) in xz.iter() {
-        let (x, z) = i;
-        let (y1, y2) = j;
-        exterior.insert((x, y1, z));
-        exterior.insert((x, y2, z));
-    }
-    for (i, j) in yz.iter() {
-        let (y, z) = i;
-        let (x1, x2) = j;
-        exterior.insert((x1, y, z));
-        exterior.insert((x2, y, z));
-    }
     edges = 0;
-    for c in exterior {
+    for c in cubes {
         let (x, y, z) = c;
         let mut points = Vec::new();
-        if x > &0 {
-            points.push((*x - 1, *y, *z));
+        if x > 0 {
+            points.push((x - 1, y, z));
         }
-        points.push((*x + 1, *y, *z));
-        if y > &0 {
-            points.push((*x, *y - 1, *z));
+        points.push((x + 1, y, z));
+        if y > 0 {
+            points.push((x, y - 1, z));
         }
-        points.push((*x, *y + 1, *z));
-        if z > &0 {
-            points.push((*x, *y, *z - 1));
+        points.push((x, y + 1, z));
+        if z > 0 {
+            points.push((x, y, z - 1));
         }
-        points.push((*x, *y, *z + 1));
+        points.push((x, y, z + 1));
         for p in points {
             let (x, y, z) = p;
             if let Some(zz) = xy.get(&(x, y)) {
