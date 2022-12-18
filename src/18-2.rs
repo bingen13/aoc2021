@@ -6,19 +6,19 @@ fn neighbours(cube: (u32, u32, u32), cubes: &HashSet<(u32, u32, u32)>) -> u32 {
     let x = cube.0;
     let y = cube.1;
     let z = cube.2;
-    if x > 0 && cubes.contains(&(x - 1, y, z)) {
+    if cubes.contains(&(x - 1, y, z)) {
         n += 1;
     }
     if cubes.contains(&(x + 1, y, z)) {
         n += 1;
     }
-    if y > 0 && cubes.contains(&(x, y - 1, z)) {
+    if cubes.contains(&(x, y - 1, z)) {
         n += 1;
     }
     if cubes.contains(&(x, y + 1, z)) {
         n += 1;
     }
-    if z > 0 && cubes.contains(&(x, y, z - 1)) {
+    if cubes.contains(&(x, y, z - 1)) {
         n += 1;
     }
     if cubes.contains(&(x, y, z + 1)) {
@@ -82,22 +82,19 @@ fn main() {
         }
     }
     edges = 0;
-    for c in cubes {
+    for c in &cubes {
         let (x, y, z) = c;
         let mut points = Vec::new();
-        if x > 0 {
-            points.push((x - 1, y, z));
-        }
-        points.push((x + 1, y, z));
-        if y > 0 {
-            points.push((x, y - 1, z));
-        }
-        points.push((x, y + 1, z));
-        if z > 0 {
-            points.push((x, y, z - 1));
-        }
-        points.push((x, y, z + 1));
+        points.push((*x - 1, *y, *z));
+        points.push((*x + 1, *y, *z));
+        points.push((*x, *y - 1, *z));
+        points.push((*x, *y + 1, *z));
+        points.push((*x, *y, *z - 1));
+        points.push((*x, *y, *z + 1));
         for p in points {
+            if cubes.contains(&p) {
+                continue;
+            }
             let (x, y, z) = p;
             if let Some(zz) = xy.get(&(x, y)) {
                 if (z < zz.0) || (z > zz.1) {
