@@ -36,9 +36,9 @@ fn transform(n: i64) -> String {
                 println!("Error!");
             }
         }
-        num = num / 5;
+        num /= 5;
     }
-    return s;
+    s
 }
 
 fn main() {
