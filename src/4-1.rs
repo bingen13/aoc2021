@@ -1,24 +1,30 @@
+use regex::Regex;
+use std::collections::HashSet;
 use std::fs::read_to_string;
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
     let f = f.split('\n');
-    let mut pairs = 0;
+    let re = Regex::new(r"\d+").unwrap();
+
+    let mut total = 0;
     for i in f {
-        if i.len() > 0 {
-            let mut j = i.split(',');
-            let p1 = j.next().unwrap();
-            let p2 = j.next().unwrap();
-            let mut p1 = p1.split('-');
-            let n1 = p1.next().unwrap().parse::<u32>().unwrap();
-            let n2 = p1.next().unwrap().parse::<u32>().unwrap();
-            let mut p2 = p2.split('-');
-            let n3 = p2.next().unwrap().parse::<u32>().unwrap();
-            let n4 = p2.next().unwrap().parse::<u32>().unwrap();
-            if (n1 <= n3) & (n2 >= n4) | ((n3 <= n1) & (n4 >= n2)) {
-                pairs += 1;
-            }
+        if i.is_empty() {
+            break;
+        }
+        let mut n = i.split(": ").nth(1).unwrap().split('|');
+        let numbers1 = re
+            .find_iter(n.next().unwrap())
+            .map(|x| x.as_str().parse::<u32>().unwrap())
+            .collect::<HashSet<_>>();
+        let numbers2 = re
+            .find_iter(n.next().unwrap())
+            .map(|x| x.as_str().parse::<u32>().unwrap())
+            .collect::<HashSet<_>>();
+        let same= numbers1.intersection(&numbers2).count();
+        if same > 0 {
+            total += 2_u32.pow(same as u32 - 1);
         }
     }
-    println!("{}", pairs);
+    println!("{}", total);
 }
