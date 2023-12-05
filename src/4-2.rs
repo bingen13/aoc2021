@@ -1,25 +1,43 @@
-use std::cmp::{max, min};
+use regex::Regex;
+use std::collections::{HashMap, HashSet};
 use std::fs::read_to_string;
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
     let f = f.split('\n');
-    let mut pairs = 0;
-    for i in f {
-        if i.len() > 0 {
-            let mut j = i.split(',');
-            let p1 = j.next().unwrap();
-            let p2 = j.next().unwrap();
-            let mut p1 = p1.split('-');
-            let n1 = p1.next().unwrap().parse::<u32>().unwrap();
-            let n2 = p1.next().unwrap().parse::<u32>().unwrap();
-            let mut p2 = p2.split('-');
-            let n3 = p2.next().unwrap().parse::<u32>().unwrap();
-            let n4 = p2.next().unwrap().parse::<u32>().unwrap();
-            if max(n1, n3) <= min(n2, n4) {
-                pairs += 1;
+    let re = Regex::new(r"\d+").unwrap();
+
+    let mut cards = HashMap::new();
+    for i in 0..f.clone().count() - 1 {
+        cards.insert(i, 1);
+    }
+
+    for (j, i) in f.enumerate() {
+        if i.is_empty() {
+            break;
+        }
+        let mut n = i.split(": ").nth(1).unwrap().split('|');
+        let numbers1 = re
+            .find_iter(n.next().unwrap())
+            .map(|x| x.as_str().parse::<u32>().unwrap())
+            .collect::<HashSet<_>>();
+        let numbers2 = re
+            .find_iter(n.next().unwrap())
+            .map(|x| x.as_str().parse::<u32>().unwrap())
+            .collect::<HashSet<_>>();
+        let same = numbers1.intersection(&numbers2).count();
+        let multiplier = cards.get(&j).unwrap().clone();
+        for k in 0..same {
+            if cards.contains_key(&(k + j + 1)) {
+                cards.entry(&k + j + 1).and_modify(|c| *c += multiplier);
             }
         }
     }
-    println!("{}", pairs);
+/*
+    for i in 0..cards.keys().count() {
+        println!("{}: {}", i, cards.get(&i).unwrap());
+    }
+*/
+
+    println!("{}", cards.values().sum::<usize>());
 }
