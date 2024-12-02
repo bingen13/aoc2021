@@ -1,54 +1,32 @@
 use std::fs::read_to_string;
 
 fn main() {
+    let mut numbers: Vec<Vec<i32>> = Vec::new();
     let f = read_to_string("input.txt").unwrap();
     let f = f.split('\n');
-    let red = 12;
-    let green = 13;
-    let blue = 14;
-    let mut total = 0;
-    'lineloop: for i in f {
+    for i in f {
         if i.is_empty() {
             break;
         }
-        let mut s = i.split(": ");
-        let game = s
-            .next()
-            .unwrap()
-            .split(" ")
-            .nth(1)
-            .unwrap()
-            .parse::<u32>()
-            .unwrap();
-        let s = s.next().unwrap().split("; ");
-        for j in s {
-            let j = j.split(", ");
-            for k in j {
-                let mut k = k.split(" ");
-                if let (Some(number), Some(colour)) = (k.next(), k.next()) {
-                    let number = number.parse::<u32>().unwrap();
-                    match colour {
-                        "red" => {
-                            if number > red {
-                                continue 'lineloop;
-                            }
-                        }
-                        "green" => {
-                            if number > green {
-                                continue 'lineloop;
-                            }
-                        }
-                        "blue" => {
-                            if number > blue {
-                                continue 'lineloop;
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-            }
-        }
-        total += game;
+        let v: Vec<i32> = i
+            .split_whitespace()
+            .map(|n| n.parse::<i32>().unwrap())
+            .collect();
+        numbers.push(v);
     }
-    println!("{}", total);
+    let mut safe = 0;
+    'count: for i in numbers {
+        let mut v = Vec::new();
+        for j in 0..(i.len() - 1) {
+            let diff = i[j] - i[j + 1];
+            if (diff.abs() > 3) | (diff == 0) {
+                continue 'count;
+            }
+            v.push(diff);
+        }
+        if v.iter().all(|n| *n > 0) | v.iter().all(|n| *n < 0) {
+            safe += 1;
+        }
+    }
+    println!("{}", safe);
 }
