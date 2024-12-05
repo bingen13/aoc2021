@@ -1,43 +1,39 @@
-use regex::Regex;
-use std::collections::HashMap;
 use std::fs::read_to_string;
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
-    let mut f = f.split("\n\n");
-    let re = Regex::new(r"\d+").unwrap();
-    let seeds = re
-        .find_iter(f.next().unwrap())
-        .map(|x| x.as_str().parse::<u64>().unwrap())
-        .collect::<Vec<_>>();
-    let mut ranges = Vec::new();
-
-    for i in f {
-        if i.is_empty() {
-            break;
-        }
-        let mut r = HashMap::new();
-        for j in i.split('\n') {
-            if let [dest, source, lenght] = re
-                .find_iter(j)
-                .map(|x| x.as_str().parse::<u64>().unwrap())
-                .collect::<Vec<_>>()[..]
-            {
-                r.insert(source..(source + lenght), dest);
+    let s = f.split("\n\n");
+    let [s1, s2, ..] = s.collect::<Vec<_>>()[..] else {
+        println!("Incorrect format.");
+        return;
+    };
+    let rules: Vec<_> = s1.split('\n').filter(|s| !s.is_empty()).collect();
+    let patterns: Vec<_> = s2.split('\n').filter(|s| !s.is_empty()).collect();
+    let mut constraints = Vec::new();
+    for i in rules {
+        let mut i = i.split('|');
+        let i1 = i.next().unwrap().parse::<u32>().unwrap();
+        let i2 = i.next().unwrap().parse::<u32>().unwrap();
+        constraints.push((i1, i2));
+    }
+    let mut acc = 0;
+    let mut pat: Vec<Vec<_>> = Vec::new();
+    for p in patterns {
+        pat.push(p.split(',').map(|s| s.parse::<u32>().unwrap()).collect());
+    }
+    'pats: for p in 0..pat.len() {
+        for c in &constraints {
+            let (c1, c2) = (c.0, c.1);
+            if let (Some(p1), Some(p2)) = (
+                pat[p].iter().position(|e| *e == c1),
+                pat[p].iter().position(|e| *e == c2),
+            ) {
+                if p1 >= p2 {
+                    continue 'pats;
+                }
             }
         }
-        ranges.push(r.clone());
+        acc += pat[p][pat[p].len() / 2];
     }
-    let mut locations = Vec::new();
-
-    for i in seeds {
-        let mut location = i;
-        for j in &ranges {
-            if let Some((key, value)) = j.iter().find(|(k, _)| k.contains(&location)) {
-                location = value + (location - key.start);
-            }
-        }
-        locations.push(location);
-    }
-    println!("{}", locations.iter().min().unwrap());
+    println!("{}", acc);
 }
