@@ -28,10 +28,10 @@ fn main() {
                 } else {
                     v *= val[j];
                 }
-                if v == *key {
-                    acc += key;
-                    continue 'outer;
-                }
+            }
+            if v == *key {
+                acc += key;
+                continue 'outer;
             }
         }
     }
