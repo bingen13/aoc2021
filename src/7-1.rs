@@ -1,57 +1,38 @@
-use std::collections::HashMap;
 use std::fs::read_to_string;
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
     let f = f.split('\n');
-    let mut cwd: Vec<(String, u64, Vec<String>)> = Vec::new();
-    let mut dirs: HashMap<String, (u64, Vec<String>)> = HashMap::new();
+    let mut equations = Vec::new();
     for i in f {
-        let v: Vec<_> = i.split(' ').collect();
-
-        // termination condition.
-        if v[0].is_empty() {
-            let elem = cwd.pop().unwrap();
-            dirs.insert(elem.0, (elem.1, elem.2));
+        if i.is_empty() {
             break;
         }
-        // Command.
-        if v[0] == "$" {
-            if v[1] == "cd" {
-                if v[2] != ".." {
-                    if !cwd.is_empty() {
-                        let mut last = cwd.pop().unwrap();
-                        let prev = last.0.clone() + &"/".to_string();
-                        last.2.push(prev.clone() + &v[2].to_string());
-                        cwd.push(last);
-                        cwd.push((prev + &v[2], 0, Vec::new()));
-                    } else {
-                        cwd.push((v[2].to_string(), 0, Vec::new()));
-                    }
+        let mut i = i.split(": ");
+        let r = i.next().unwrap().parse::<u64>().unwrap();
+        let ops = i
+            .next()
+            .unwrap()
+            .split(' ')
+            .map(|m| m.parse::<u64>().unwrap())
+            .collect::<Vec<_>>();
+        equations.push((r, ops));
+    }
+    let mut acc: u64 = 0;
+    'outer: for (key, val) in &equations {
+        for i in 0..(2_u32.pow(val.len() as u32 - 1)) {
+            let mut v = val[0];
+            for j in 1..val.len() {
+                if (i >> (j - 1)) & 1 == 0 {
+                    v += val[j];
                 } else {
-                    let elem = cwd.pop().unwrap();
-                    dirs.insert(elem.0, (elem.1, elem.2));
+                    v *= val[j];
+                }
+                if v == *key {
+                    acc += key;
+                    continue 'outer;
                 }
             }
-        } else if v[0] != "dir" {
-            let n = v[0].parse::<u64>().unwrap();
-            let mut last = cwd.pop().unwrap();
-            last.1 += n;
-            cwd.push(last);
-        }
-    }
-    let mut acc = 0;
-    for (_, j) in &dirs {
-        let mut s = j.0;
-        let mut v = j.1.clone();
-        while !v.is_empty() {
-            let e = v.pop().unwrap();
-            let k2 = dirs.get(&e).unwrap();
-            s += k2.0;
-            v.append(&mut k2.1.clone());
-        }
-        if s < 100000 {
-            acc += s;
         }
     }
     println!("{}", acc);
