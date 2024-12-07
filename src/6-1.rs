@@ -21,7 +21,7 @@ fn add(s1: &mut usize, s2: i32) {
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
-    let l = f.split('\n').count();
+    let l = f.split('\n').count()-1;
     let mut obstacles = HashSet::new();
     let mut start = (0, 0);
     let mut dir: (i32, i32) = (-1, 0);
@@ -45,10 +45,10 @@ fn main() {
             continue;
         }
         visits.insert(step);
-        if (step.0 == 0) || (step.0 == l - 1) || (step.1 == 0) || (step.1 == l - 1) {
+        if (step.0 == 0) || (step.0 == l -1) || (step.1 == 0) || (step.1 == l -1) {
             break;
         }
         start = step;
     }
-    println!("{}", visits.len() - 1);
+    println!("{}", visits.len());
 }
