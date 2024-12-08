@@ -1,77 +1,46 @@
-use std::cmp::max;
+use std::collections::HashSet;
 use std::fs::read_to_string;
 
-fn up(i: usize, l: usize) -> bool {
-    i >= l
-}
-
-fn down(i: usize, l: usize) -> bool {
-    i < l * (l - 1)
-}
-
-fn left(i: usize, l: usize) -> bool {
-    i % l != 0
-}
-
-fn right(i: usize, l: usize) -> bool {
-    i % l != (l - 1)
+fn slope(p1: &(i32, i32), p2: &(i32, i32)) -> f64 {
+    (p1.0 - p2.0) as f64 / (p1.1 - p2.1) as f64
 }
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
+    let l = f.split('\n').count() - 1;
+    let mut m = Vec::new();
     let f = f.split('\n');
-    let mut trees = Vec::new();
-    let mut lines = 0;
-    for (i, j) in f.enumerate() {
-        if j.is_empty() {
-            break;
-        }
-        lines = i;
-        for c in j.chars() {
-            trees.push(c.to_digit(10).unwrap());
+    for (i, line) in f.enumerate() {
+        for (j, ch) in line.chars().enumerate() {
+            if ch.is_alphanumeric() {
+                m.push((ch, (i as i32, j as i32)));
+            }
         }
     }
-    lines += 1;
-    let length = trees.len();
-    let rows = length / lines;
-
-    let mut max_val = 0;
-    for (i, j) in trees.iter().enumerate() {
-        let mut ups = 0;
-        let mut downs = 0;
-        let mut lefts = 0;
-        let mut rights = 0;
-        let mut t = i;
-        let mut value = &0;
-        while up(t, rows) & (value < j) {
-            ups += 1;
-            t -= rows;
-            value = &trees[t];
+    let h: HashSet<_> = m.iter().map(|e| e.0).collect();
+    let mut anti: HashSet<_> = m.iter().map(|e| e.1).collect();
+    for i in 0..l {
+        'outer: for j in 0..l {
+            'inner: for k in &h {
+                let mut points: Vec<_> = m
+                    .iter()
+                    .filter_map(|e| if e.0 == *k { Some(e.1) } else { None })
+                    .collect();
+                loop {
+                    let p = points[0];
+                    points.remove(0);
+                    if points.len() < 1 {
+                        continue 'inner;
+                    }
+                    for p2 in &points {
+                        if slope(&p, &(i as i32, j as i32)) == slope(&p, p2) {
+                            anti.insert((i as i32, j as i32));
+                            continue 'outer;
+                        }
+                    }
+                }
+            }
         }
-        value = &0;
-        t = i;
-        while down(t, rows) & (value < j) {
-            downs += 1;
-            t += rows;
-            value = &trees[t];
-        }
-        value = &0;
-        t = i;
-        while left(t, rows) & (value < j) {
-            lefts += 1;
-            t -= 1;
-            value = &trees[t];
-        }
-        value = &0;
-        t = i;
-        while right(t, rows) & (value < j) {
-            rights += 1;
-            t += 1;
-
-            value = &trees[t];
-        }
-
-        max_val = max(max_val, ups * downs * lefts * rights);
     }
-    println!("{}", max_val);
+    println!("{}", anti.len());
 }
