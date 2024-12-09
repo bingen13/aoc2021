@@ -1,63 +1,50 @@
-use std::collections::HashSet;
+use std::cmp::min;
 use std::fs::read_to_string;
-
-fn contact(a: &(i32, i32), b: &(i32, i32)) -> bool {
-    let (d1, d2) = dist(a, b);
-
-    (d1 >= -1) & (d1 <= 1) & (d2 >= -1) & (d2 <= 1)
-}
-
-fn dist(a: &(i32, i32), b: &(i32, i32)) -> (i32, i32) {
-    let (x1, y1) = a;
-    let (x2, y2) = b;
-    (x1 - x2, y1 - y2)
-}
-
-fn move_tail(head: &mut (i32, i32), tail: &mut (i32, i32)) -> () {
-    if !contact(&head, &tail) {
-        let (dx, dy) = dist(&head, &tail);
-        if dx == 0 {
-            tail.1 = (tail.1 + head.1) / 2;
-        } else if dy == 0 {
-            tail.0 = (tail.0 + head.0) / 2;
-        } else if dx.abs() > dy.abs() {
-            tail.0 = (tail.0 + head.0) / 2;
-            tail.1 = head.1;
-        } else if dy.abs() > dx.abs() {
-            tail.1 = (tail.1 + head.1) / 2;
-            tail.0 = head.0;
-        } else {
-            println!("Error!");
-        }
-    }
-}
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
-    let f = f.split('\n');
-    let mut head: (i32, i32) = (0, 0);
-    let mut tail: (i32, i32) = (0, 0);
-    let mut tail_pos = HashSet::new();
-    tail_pos.insert(tail);
-    for i in f {
-        let i: Vec<_> = i.split(' ').collect();
-        match i[..] {
-            [direction, distance] => {
-                let distance = distance.parse::<i32>().unwrap();
-                for _ in 0..distance {
-                    match direction {
-                        "U" => head.1 += 1,
-                        "D" => head.1 -= 1,
-                        "L" => head.0 -= 1,
-                        "R" => head.0 += 1,
-                        _ => (),
-                    }
-                    move_tail(&mut head, &mut tail);
-                    tail_pos.insert(tail);
-                }
-            }
-            _ => (),
+    let mut v = Vec::new();
+    for (i, ch) in f.chars().enumerate() {
+        if !ch.is_digit(10) {
+            break;
+        }
+        if i % 2 == 0 {
+            v.push((Some(i / 2), ch.to_digit(10).unwrap()));
+        } else {
+            v.push((None, ch.to_digit(10).unwrap()));
         }
     }
-    println!("{}", tail_pos.len());
+    while v.iter().any(|e| e.0 == None) {
+        let left = v.iter().position(|e| e.0 == None).unwrap();
+        let right = v.len() - 1;
+        let n = min(v[left].1, v[right].1);
+        let val = v[right].0;
+        if v[right].1 == n {
+            v.remove(right);
+        } else {
+            v[right].1 -= n;
+        }
+        if v[left].1 == n {
+            v[left] = (val, n);
+        } else {
+            v[left].1 -= n;
+            v.insert(left, (val, n));
+        }
+        if v.last().unwrap().0 == None {
+            v.remove(v.len() - 1);
+        }
+    }
+    while let Some((i, e)) = v.windows(2).enumerate().find(|(i, e)| e[0].0 == e[1].0) {
+        v[i] = (v[i].0, v[i].1 + v[i + 1].1);
+        v.remove(i + 1);
+    }
+    let mut s = 0;
+    let mut i = 0;
+    for val in v {
+        for j in 0..val.1 {
+            s += (i + j) as usize * val.0.unwrap();
+        }
+        i += val.1;
+    }
+    println!("{}", s);
 }
