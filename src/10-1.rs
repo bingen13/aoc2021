@@ -1,35 +1,47 @@
+use std::collections::HashSet;
 use std::fs::read_to_string;
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
-    let f = f.split('\n');
-    let mut cycle = 1;
-    let mut value: i32 = 1;
-    let mut state = Vec::new();
-    state.push((1, 1));
-    for i in f {
-        let i: Vec<_> = i.split(' ').collect();
-        match i[..] {
-            ["noop"] => {
-                cycle += 1;
-                state.push((cycle, value));
-            }
-            ["addx", val] => {
-                cycle += 1;
-                state.push((cycle, value));
-                cycle += 1;
-                value += val.parse::<i32>().unwrap();
-                state.push((cycle, value));
-            }
-            _ => (),
+    let l = f.split('\n').count() - 1;
+    let mut v = Vec::new();
+    for i in f.chars() {
+        if i.is_digit(10) {
+            v.push(i.to_digit(10).unwrap());
         }
     }
-    let mut result = 0;
-    for (i, j) in state {
-        if (i == 20) | ((i > 20) & ((i - 20) % 40 == 0)) {
-            result += i * j;
+    let mut zeros = v
+        .iter()
+        .enumerate()
+        .filter_map(|(i, e)| if *e == 0 { Some(i) } else { None })
+        .collect::<Vec<_>>();
+    let mut acc = 0;
+    while !zeros.is_empty() {
+        let mut pos = HashSet::new();
+        pos.insert(zeros.remove(zeros.len() - 1));
+        for i in 1..=9 {
+            let mut n = Vec::new();
+            for p in pos {
+                // Left.
+                if (p % l != 0) && v[p - 1] == i {
+                    n.push(p - 1);
+                }
+                // Right.
+                if (p % l != l - 1) && v[p + 1] == i {
+                    n.push(p + 1);
+                }
+                // Up.
+                if (p >= l) && (v[p - l] == i) {
+                    n.push(p - l);
+                }
+                // Down.
+                if (p + l < v.len()) && (v[p + l] == i) {
+                    n.push(p + l);
+                }
+            }
+            pos = n.into_iter().collect();
         }
+        acc += pos.len();
     }
-
-    println!("{}", result);
+    println!("{}", acc);
 }
