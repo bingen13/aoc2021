@@ -24,12 +24,11 @@ fn main() {
     }
     let mut m2 = HashMap::new();
     for _ in 0..75 {
-        for (k, val) in m {
-            let v = trans(&k);
-            for i in v {
-                *m2.entry(i).or_insert(0) += val;
-            }
-        }
+        m.iter().for_each(|(k, v)| {
+            trans(k)
+                .into_iter()
+                .for_each(|e| *m2.entry(e).or_insert(0) += v)
+        });
         m = m2.clone();
         m2.clear();
     }
