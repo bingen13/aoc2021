@@ -1,77 +1,201 @@
-use std::collections::{HashMap, HashSet};
+use std::cmp::{max, min};
+use std::collections::HashMap;
 use std::fs::read_to_string;
 
-fn neighbour(x: u32, y: u32) -> Vec<(u32, u32)> {
-    let mut v = Vec::new();
-    match (x, y) {
-        (0, 0) => {
-            v.push((0, 1));
-            v.push((1, 0));
-        }
-        (0, 1..) => {
-            v.push((0, y - 1));
-            v.push((0, y + 1));
-            v.push((1, y));
-        }
-        (1.., 0) => {
-            v.push((x - 1, 0));
-            v.push((x + 1, 0));
-            v.push((x, 1));
-        }
-        (1.., 1..) => {
-            v.push((x - 1, y));
-            v.push((x + 1, y));
-            v.push((x, y - 1));
-            v.push((x, y + 1));
+fn segment(points: &[usize]) -> Vec<(usize, usize)> {
+    let mut started = false;
+    let mut start = 0;
+    let mut end = 0;
+    let mut segments = Vec::new();
+    for p in points.iter() {
+        if !started {
+            started = true;
+            start = *p;
+            end = *p;
+        } else if end == *p - 1 {
+            end = *p;
+        } else {
+            segments.push((start, end));
+            start = *p;
+            end = *p;
         }
     }
-    v
+    if started {
+        segments.push((start, end));
+    }
+    segments
+}
+
+fn neighbours(n: &usize, m: &[usize], l: &usize) -> usize {
+    let mut c = Vec::new();
+    // Left.
+    if *n > 0 {
+        c.push(n - 1);
+    }
+    // Right.
+    if *n < ((l * l) - 1) {
+        c.push(n + 1);
+    }
+    // Up.
+    if *n >= *l {
+        c.push(n - *l);
+    }
+    // Down.
+    if *n < ((l * l) - l) {
+        c.push(n + *l);
+    }
+    c.into_iter().filter(|e| m.contains(e)).count()
+}
+
+fn is_neighbour(n1: &usize, n2: &usize, l: &usize) -> bool {
+    let d = max(n1, n2) - min(n1, n2);
+    (d == *l) || ((d == 1) && (min(n1, n2) % l != l - 1))
 }
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
-    let mut x = 0;
-    let mut y = 0;
-    let mut map = HashMap::new();
-    let mut end = (0, 0);
-    for i in f.chars() {
-        if i == '\n' {
-            x += 1;
-            y = 0;
-        } else {
-            if ('a'..='z').contains(&i) {
-                map.insert((x, y), i as u32 - 'a' as u32);
-            } else if i == 'S' {
-                map.insert((x, y), 0);
-            } else if i == 'E' {
-                end = (x, y);
-                map.insert((x, y), 26);
-            }
-            y += 1;
+    let mut m = HashMap::new();
+    let l = f64::sqrt(f.chars().filter(|c| c.is_alphabetic()).count() as f64 + 1.0) as usize;
+    for (i, ch) in f.chars().filter(|c| c.is_alphabetic()).enumerate() {
+        if ch.is_alphabetic() {
+            let n = m.entry(ch).or_insert(vec![]);
+            n.push(i);
         }
     }
-    let mut visit = vec![end];
-    let mut visited = HashSet::new();
-    let mut steps = 0;
-    'major: loop {
-        let mut newq = Vec::new();
-        for i in visit {
-            for j in neighbour(i.0, i.1) {
-                if !visited.contains(&j)
-                    && map.contains_key(&j)
-                    && (&(map.get(&j).unwrap() + 1) >= map.get(&i).unwrap())
-                {
-                    visited.insert(j);
-                    newq.push(j);
-                    if map.get(&j).unwrap() == &0 {
-                        steps += 1;
-                        break 'major;
-                    }
+    let mut regions = Vec::new();
+    for k in m.keys() {
+        let mut v = m.get(k).unwrap().clone();
+        while !v.is_empty() {
+            let mut c = vec![v.remove(v.len() - 1)];
+            let mut r = Vec::new();
+            'inner: loop {
+                if c.iter().map(|e| neighbours(e, &v, &l)).sum::<usize>() > 0 {
+                    r.extend(c.clone());
+                    c = v
+                        .clone()
+                        .into_iter()
+                        .filter(|e| c.iter().any(|e2| is_neighbour(e, e2, &l)))
+                        .collect();
+                    v.retain(|e| !c.contains(e));
+                } else {
+                    v.retain(|e| !c.contains(e));
+                    r.extend(c);
+                    break 'inner;
                 }
             }
+            regions.push(r);
         }
-        visit = newq;
-        steps += 1;
     }
-    println!("{}", steps);
+    let mut acc = 0;
+    for r in &regions {
+        let mut sides = 0;
+        let highest = r.iter().map(|e| e / l).min().unwrap();
+        let lowest = r.iter().map(|e| e / l).max().unwrap();
+        let left = r.iter().map(|e| e % l).min().unwrap();
+        let right = r.iter().map(|e| e % l).max().unwrap();
+        let mut h = Vec::new();
+        for i in highest..=lowest {
+            let mut row = Vec::new();
+            for j in left..=right {
+                if r.contains(&((i * l) + j)) {
+                    row.push(j);
+                }
+            }
+            row.sort();
+            h.push(segment(&row));
+        }
+        // Upper sides.
+        sides += h[0].len();
+        for i in 1..h.len() {
+            let mut p = Vec::new();
+            for j in left..=right {
+                if h[i].iter().any(|(e1, e2)| (*e1 <= j) && (*e2 >= j))
+                    && !h[i - 1].iter().any(|(e1, e2)| (*e1 <= j) && (*e2 >= j))
+                {
+                    p.push(j);
+                }
+            }
+            sides += segment(&p).len();
+        }
+        // Lower sides.
+        sides += h.last().unwrap().len();
+        for i in 1..h.len() {
+            let mut p = Vec::new();
+            for j in left..=right {
+                if h[h.len() - i - 1]
+                    .iter()
+                    .any(|(e1, e2)| (*e1 <= j) && (*e2 >= j))
+                    && !h[h.len() - i]
+                        .iter()
+                        .any(|(e1, e2)| (*e1 <= j) && (*e2 >= j))
+                {
+                    p.push(j);
+                }
+            }
+            sides += segment(&p).len();
+        }
+        acc += sides * r.len();
+    }
+    let mut rotated_regions = Vec::new();
+    for r in &regions {
+        let mut r2 = Vec::new();
+        for i in r {
+            let x = i / l;
+            let y = i % l;
+            let x2 = y;
+            let y2 = l - x - 1;
+            r2.push((x2, y2));
+        }
+        rotated_regions.push(r2);
+    }
+    for r in &regions {
+        let mut sides = 0;
+        let highest = r.iter().map(|e| e / l).min().unwrap();
+        let lowest = r.iter().map(|e| e / l).max().unwrap();
+        let left = r.iter().map(|e| e % l).min().unwrap();
+        let right = r.iter().map(|e| e % l).max().unwrap();
+        let mut h = Vec::new();
+        for i in highest..=lowest {
+            let mut row = Vec::new();
+            for j in left..=right {
+                if r.contains(&((i * l) + j)) {
+                    row.push(j);
+                }
+            }
+            row.sort();
+            h.push(segment(&row));
+        }
+        // Upper sides.
+        sides += h[0].len();
+        for i in 1..h.len() {
+            let mut p = Vec::new();
+            for j in left..=right {
+                if h[i].iter().any(|(e1, e2)| (*e1 <= j) && (*e2 >= j))
+                    && !h[i - 1].iter().any(|(e1, e2)| (*e1 <= j) && (*e2 >= j))
+                {
+                    p.push(j);
+                }
+            }
+            sides += segment(&p).len();
+        }
+        // Lower sides.
+        sides += h.last().unwrap().len();
+        for i in 1..h.len() {
+            let mut p = Vec::new();
+            for j in left..=right {
+                if h[h.len() - i - 1]
+                    .iter()
+                    .any(|(e1, e2)| (*e1 <= j) && (*e2 >= j))
+                    && !h[h.len() - i]
+                        .iter()
+                        .any(|(e1, e2)| (*e1 <= j) && (*e2 >= j))
+                {
+                    p.push(j);
+                }
+            }
+            sides += segment(&p).len();
+        }
+        acc += sides * r.len();
+    }
+    println!("{}", acc);
 }
