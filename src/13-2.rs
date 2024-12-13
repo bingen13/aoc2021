@@ -25,7 +25,7 @@ fn main() {
     let mut acc: i64 = 0;
     for m in machines {
         let (x1, y1, x2, y2, r1, r2) = m;
-        let d = (x1 * y2) - (x2 * y1);
+        let d = (x1 * y2) - (y1 * x2);
         let a = (r1 * y2 - r2 * x2) / d;
         let b = (x1 * r2 - y1 * r1) / d;
         if (a >= 0) && (b >= 0) && (r1 == (x1 * a) + (x2 * b)) && (r2 == (y1 * a) + (y2 * b)) {
