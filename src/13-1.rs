@@ -1,112 +1,41 @@
+use regex::Regex;
 use std::fs::read_to_string;
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-enum Item {
-    N(u32),
-    O,
-    C,
-}
-
-fn order(pair1: &[Item], pair2: &[Item]) -> bool {
-    let mut p1 = Vec::new();
-    let mut p2 = Vec::new();
-    for i in 0..pair1.len() {
-        p1.push(pair1[(pair1.len() - i) - 1]);
-    }
-    for i in 0..pair2.len() {
-        p2.push(pair2[(pair2.len() - i) - 1]);
-    }
-    loop {
-        let item1 = p1.pop().unwrap();
-        let item2 = p2.pop().unwrap();
-        if p1.is_empty() {
-            return true;
-        }
-        if p2.is_empty() {
-            return false;
-        }
-        match (item1, item2) {
-            (Item::O, Item::O) => {}
-            (Item::C, Item::C) => {}
-            (Item::N(n1), Item::N(n2)) => {
-                if n1 < n2 {
-                    return true;
-                } else if n1 > n2 {
-                    return false;
-                }
-            }
-            (Item::C, _) => {
-                return true;
-            }
-            (_, Item::C) => {
-                return false;
-            }
-            (Item::N(n), Item::O) => {
-                p1.push(Item::C);
-                p1.push(Item::N(n));
-                p1.push(Item::O);
-                p2.push(item2);
-            }
-            (Item::O, Item::N(n)) => {
-                p2.push(Item::C);
-                p2.push(Item::N(n));
-                p2.push(Item::O);
-                p1.push(item1);
-            }
-        }
-    }
-    false
-}
-
-fn parse(s: &str) -> Vec<Item> {
-    let mut digit: Option<u32> = None;
-    let mut v = Vec::new();
-    for i in s.chars() {
-        match i {
-            '[' => v.push(Item::O),
-            ']' => {
-                if let Some(d) = digit {
-                    v.push(Item::N(d));
-                    digit = None;
-                }
-                v.push(Item::C);
-            }
-            ',' => {
-                if let Some(d) = digit {
-                    v.push(Item::N(d));
-                    digit = None;
-                }
-            }
-            '0'..='9' => {
-                if let Some(mut d) = digit {
-                    d *= 10;
-                    d += i.to_digit(10).unwrap();
-                    digit = Some(d);
-                } else {
-                    digit = Some(i.to_digit(10).unwrap());
-                }
-            }
-            _ => println!("Well, fuck."),
-        }
-    }
-    v
-}
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
-    let f = f.split("\n\n");
-    let mut result = 0;
-    let mut index = 1;
-    for i in f {
-        let mut i = i.split('\n');
-        let p1 = i.next().unwrap();
-        let p2 = i.next().unwrap();
-        let p1 = parse(p1);
-        let p2 = parse(p2);
-        if order(&p1, &p2) {
-            result += index;
+    let r = Regex::new(r"\d+").unwrap();
+    let mut machines = Vec::new();
+    for i in f.split("\n\n") {
+        if i.is_empty() {
+            break;
         }
-        index += 1;
+        let nums: Vec<_> = r
+            .find_iter(i)
+            .map(|n| n.as_str().parse::<u32>().unwrap())
+            .collect();
+        machines.push((nums[0], nums[1], nums[2], nums[3], nums[4], nums[5]));
     }
-    println!("{}", result);
+    let mut cost = Vec::new();
+    for (n, m) in machines.iter().enumerate() {
+        for i in 0..=100 {
+            for j in 0..=100 {
+                let x = (i * m.0) + (j * m.2);
+                let y = (i * m.1) + (j * m.3);
+                if (x == m.4) && (y == m.5) {
+                    cost.push((n, i, j, (3 * i) + j));
+                }
+            }
+        }
+        let mincost = cost.iter().filter(|e| e.0 == n).map(|e| e.3).min();
+        if let Some(minc) = mincost {
+            cost.retain(|e| (e.0 != n) || (e.3 == minc));
+        }
+    }
+    let mut acc = 0;
+    for n in 0..machines.len() {
+        if let Some(c) = cost.iter().find(|e| e.0 == n) {
+            acc += c.3;
+        }
+    }
+    println!("{}", acc);
 }
