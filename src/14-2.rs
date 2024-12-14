@@ -49,13 +49,34 @@ fn main() {
         rb.sort();
         rb.dedup();
         if rb.len() == rbs {
-            println!("Loop {}.", i-1 );
+            println!("Loop {}.", i - 1);
         }
         for r in robots.iter_mut() {
             r[0] += r[2];
             r[1] += r[3];
             r[0] = r[0].rem_euclid(width);
             r[1] = r[1].rem_euclid(height);
+        }
+        let mut m = 0;
+        for i in 0..height {
+            if !robots.iter().any(|e| e[1] == i) {
+                continue;
+            }
+            let mut s: Vec<_> = robots
+                .iter()
+                .filter(|e| e[1] == i)
+                .map(|e2| e2[0])
+                .collect();
+            s.sort();
+            s.dedup();
+            let n = segment(&s);
+            if n > m {
+                m = n;
+            }
+        }
+        if m > top {
+            top = m;
+            i1 = i;
         }
     }
     println!("{}", i1);
