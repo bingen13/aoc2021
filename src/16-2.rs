@@ -83,16 +83,12 @@ fn main() {
     let mut distance = HashMap::new();
     distance.insert((start, Direction::East), 0);
     unvisited.insert((start, Direction::East));
+    let mut pred: HashMap<(Point, Direction), Vec<(Point, Direction)>> = HashMap::new();
     while let Some(node) = unvisited
         .iter()
         .min_by(|a, b| distance.get(a).cmp(&distance.get(b)))
     {
         let node = ((*node).clone(), distance.get(node).unwrap().clone());
-if node.0.0 == end {
-println!("{}", node.1);
-break;
-}
-
         let mut neighbours: HashMap<(Point, Direction), usize> = HashMap::new();
         match node.0 .1 {
             Direction::North => {
@@ -124,9 +120,14 @@ break;
                 match distance.get(&n.0) {
                     None => {
                         distance.insert(n.0, n.1);
+                        pred.insert(n.0, vec![node.0]);
                     }
                     Some(dist) if *dist > n.1 => {
+                        pred.insert(n.0, vec![node.0]);
                         distance.insert(n.0, n.1);
+                    }
+                    Some(dist) if *dist == n.1 => {
+                        pred.entry(n.0).and_modify(|v| v.extend(vec![node.0]));
                     }
                     Some(_) => (),
                 };
@@ -135,4 +136,25 @@ break;
         visited.insert(node.0);
         unvisited.remove(&node.0);
     }
+    let mut visited: HashSet<Point> = HashSet::new();
+    let mut endpoint = vec![distance
+        .iter()
+        .filter(|(k, _)| k.0 == end)
+        .min_by_key(|(_, v)| *v)
+        .unwrap()
+        .0
+        .clone()];
+    visited.insert(end);
+    while !visited.contains(&start) {
+        endpoint = endpoint
+            .iter()
+            .filter_map(|e| pred.get(e))
+            .flat_map(|e| e.iter())
+            .cloned()
+            .collect();
+        endpoint.iter().for_each(|e| {
+            visited.insert(e.0);
+        });
+    }
+println!("{}", visited.len());
 }
