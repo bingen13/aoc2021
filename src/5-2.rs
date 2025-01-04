@@ -1,43 +1,54 @@
+use std::cmp::Ordering;
 use std::fs::read_to_string;
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
-    let mut f = f.split("\n\n");
-    let stacks = f.next().unwrap();
-    let moves = f.next().unwrap();
-    let mut blocks = Vec::new();
-    for _i in 0..9 {
-        blocks.push(Vec::new());
+    let s = f.split("\n\n");
+    let [s1, s2, ..] = s.collect::<Vec<_>>()[..] else {
+        println!("Incorrect format.");
+        return;
+    };
+    let rules: Vec<_> = s1.split('\n').filter(|s| !s.is_empty()).collect();
+    let patterns: Vec<_> = s2.split('\n').filter(|s| !s.is_empty()).collect();
+    let mut constraints = Vec::new();
+    for i in rules {
+        let mut i = i.split('|');
+        let i1 = i.next().unwrap().parse::<u32>().unwrap();
+        let i2 = i.next().unwrap().parse::<u32>().unwrap();
+        constraints.push((i1, i2));
     }
-
-    for i in stacks.split('\n') {
-        for (j, k) in i.chars().enumerate() {
-            if (j % 4 == 1) & !k.is_numeric() & (k != ' ') {
-                blocks[j / 4].push(k);
+    let mut acc = 0;
+    let mut pat: Vec<Vec<_>> = Vec::new();
+    for p in patterns {
+        pat.push(p.split(',').map(|s| s.parse::<u32>().unwrap()).collect());
+    }
+    'pats: for p in 0..pat.len() {
+        for c in &constraints {
+            let (c1, c2) = (c.0, c.1);
+            if let (Some(p1), Some(p2)) = (
+                pat[p].iter().position(|e| *e == c1),
+                pat[p].iter().position(|e| *e == c2),
+            ) {
+                if p1 >= p2 {
+                    // here is the meat.
+                    let cons = constraints
+                        .iter()
+                        .filter(|c| pat[p].contains(&c.0) && pat[p].contains(&c.1))
+                        .collect::<Vec<_>>();
+                    pat[p].sort_by(|e1, e2| {
+                        if cons.contains(&&(*e1, *e2)) {
+                            Ordering::Less
+                        } else if cons.contains(&&(*e2, *e1)) {
+                            Ordering::Greater
+                        } else {
+                            Ordering::Equal
+                        }
+                    });
+                    acc += pat[p][pat[p].len() / 2];
+                    continue 'pats;
+                }
             }
         }
     }
-    for i in 0..blocks.len() {
-        blocks[i].reverse();
-    }
-    for i in moves.split('\n') {
-        if !i.is_empty() {
-            let mut i = i.split(' ');
-            let n1 = i.nth(1).unwrap().parse::<usize>().unwrap();
-            let n2 = i.nth(1).unwrap().parse::<usize>().unwrap();
-            let n3 = i.nth(1).unwrap().parse::<usize>().unwrap();
-            let mut t = Vec::new();
-            for _ in 0..n1 {
-                let elem = blocks[n2 - 1].pop().unwrap();
-                t.push(elem);
-            }
-            t.reverse();
-            blocks[n3 - 1].append(&mut t);
-        }
-    }
-    let mut result = String::new();
-    for i in 0..blocks.len() {
-        result.push(blocks[i].pop().unwrap());
-    }
-    println!("{}", result);
+    println!("{}", acc);
 }
