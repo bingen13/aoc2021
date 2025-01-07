@@ -9,7 +9,7 @@ struct Point {
 
 impl Point {
     fn north(&self) -> Option<Self> {
-        if self.y > 1 {
+        if self.y > 0 {
             Some(Point {
                 x: self.x,
                 y: self.y - 1,

@@ -1,129 +1,120 @@
 use std::collections::{HashMap, HashSet};
 use std::fs::read_to_string;
 
-fn neighbours(cube: (u32, u32, u32), cubes: &HashSet<(u32, u32, u32)>) -> u32 {
-    let mut n = 0;
-    let x = cube.0;
-    let y = cube.1;
-    let z = cube.2;
-    if cubes.contains(&(x - 1, y, z)) {
-        n += 1;
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+struct Point {
+    x: usize,
+    y: usize,
+}
+
+impl Point {
+    fn north(&self) -> Option<Self> {
+        if self.y > 1 {
+            Some(Point {
+                x: self.x,
+                y: self.y - 1,
+            })
+        } else {
+            None
+        }
     }
-    if cubes.contains(&(x + 1, y, z)) {
-        n += 1;
+    fn south(&self) -> Option<Self> {
+        if self.y < 6 {
+            Some(Point {
+                x: self.x,
+                y: self.y + 1,
+            })
+        } else {
+            None
+        }
     }
-    if cubes.contains(&(x, y - 1, z)) {
-        n += 1;
+    fn west(&self) -> Option<Self> {
+        if self.x > 0 {
+            Some(Point {
+                x: self.x - 1,
+                y: self.y,
+            })
+        } else {
+            None
+        }
     }
-    if cubes.contains(&(x, y + 1, z)) {
-        n += 1;
+    fn east(&self) -> Option<Self> {
+        if self.x < 6 {
+            Some(Point {
+                x: self.x + 1,
+                y: self.y,
+            })
+        } else {
+            None
+        }
     }
-    if cubes.contains(&(x, y, z - 1)) {
-        n += 1;
-    }
-    if cubes.contains(&(x, y, z + 1)) {
-        n += 1;
-    }
-    n
 }
 
 fn main() {
     let f = read_to_string("input.txt").unwrap();
-    let f = f.split('\n');
-    let mut cubes = HashSet::new();
-    for i in f {
+    let start = Point { x: 0, y: 0 };
+    let end = Point { x: 6, y: 6 };
+    let mut walls: HashSet<Point> = HashSet::new();
+    let mut obst = Vec::new();
+    for i in f.split('\n') {
         if i.is_empty() {
             break;
         }
-        let i = i.split(',');
-        if let [n1, n2, n3] = i.map(|x| x.parse::<u32>().unwrap()).collect::<Vec<_>>()[..] {
-            cubes.insert((n1 + 1, n2 + 1, n3 + 1));
-        }
+        let mut i = i.split(',');
+        obst.push((
+            i.next().unwrap().parse::<usize>().unwrap(),
+            i.next().unwrap().parse::<usize>().unwrap(),
+        ));
     }
-    let mut edges = 0;
-    for c in cubes.iter() {
-        edges += 6 - neighbours(*c, &cubes);
-    }
-    println!("{}", edges);
-    let mut xy: HashMap<(u32, u32), (u32, u32)> = HashMap::new();
-    let mut xz: HashMap<(u32, u32), (u32, u32)> = HashMap::new();
-    let mut yz: HashMap<(u32, u32), (u32, u32)> = HashMap::new();
-    for c in cubes.iter() {
-        let (x, y, z) = c;
-        if let Some(oxy) = xy.get_mut(&(*x, *y)) {
-            if z < &oxy.0 {
-                oxy.0 = *z;
+    let mut i = 0;
+    loop {
+        let mut visited: HashSet<Point> = HashSet::new();
+        let mut unvisited = HashSet::new();
+        let mut distance = HashMap::new();
+        distance.insert(start, 0);
+        unvisited.insert(start);
+        while let Some(node) = unvisited
+            .iter()
+            .min_by(|a, b| distance.get(a).cmp(&distance.get(b)))
+        {
+            let node = ((*node).clone(), distance.get(node).unwrap().clone());
+            if node.0 == end {
+                break;
             }
-            if z > &oxy.1 {
-                oxy.1 = *z;
-            }
-        } else {
-            xy.insert((*x, *y), (*z, *z));
-        }
-        if let Some(oxz) = xz.get_mut(&(*x, *z)) {
-            if y < &oxz.0 {
-                oxz.0 = *y;
-            }
-            if y > &oxz.1 {
-                oxz.1 = *y;
-            }
-        } else {
-            xz.insert((*x, *z), (*y, *y));
-        }
-        if let Some(oyz) = yz.get_mut(&(*y, *z)) {
-            if x < &oyz.0 {
-                oyz.0 = *x;
-            }
-            if x > &oyz.1 {
-                oyz.1 = *x;
-            }
-        } else {
-            yz.insert((*y, *z), (*x, *x));
-        }
-    }
-    edges = 0;
-    for c in &cubes {
-        let (x, y, z) = c;
-        let mut points = Vec::new();
-        points.push((*x - 1, *y, *z));
-        points.push((*x + 1, *y, *z));
-        points.push((*x, *y - 1, *z));
-        points.push((*x, *y + 1, *z));
-        points.push((*x, *y, *z - 1));
-        points.push((*x, *y, *z + 1));
-        for p in points {
-            if cubes.contains(&p) {
-                continue;
-            }
-            let (x, y, z) = p;
-            if let Some(zz) = xy.get(&(x, y)) {
-                if (z < zz.0) || (z > zz.1) {
-                    edges += 1;
-                    continue;
+            let neighbours = [node.0.north(), node.0.south(), node.0.east(), node.0.west()]
+                .into_iter()
+                .flatten()
+                .map(|x| (x, node.1 + 1))
+                .filter(|x| !walls.contains(&x.0))
+                .collect::<Vec<_>>();
+            for n in neighbours.into_iter() {
+                if !visited.contains(&n.0) {
+                    unvisited.insert(n.0);
+                    match distance.get(&n.0) {
+                        None => {
+                            distance.insert(n.0, n.1);
+                        }
+                        Some(dist) if *dist > n.1 => {
+                            distance.insert(n.0, n.1);
+                        }
+                        Some(_) => (),
+                    };
                 }
-            } else {
-                edges += 1;
-                continue;
             }
-            if let Some(yy) = xz.get(&(x, z)) {
-                if (y < yy.0) || (y > yy.1) {
-                    edges += 1;
-                    continue;
-                }
-            } else {
-                edges += 1;
-                continue;
-            }
-            if let Some(xx) = yz.get(&(y, z)) {
-                if (x < xx.0) || (x > xx.1) {
-                    edges += 1;
-                    continue;
-                }
-            } else {
-                edges += 1;
-                continue;
-            }
+            visited.insert(node.0);
+            unvisited.remove(&node.0);
+        }
+        if !distance.keys().any(|k| *k == end) {
+            println!("{}, {}", i, walls.len());
+            println!("{:?}", obst[i - 1]);
+            break;
+        } else {
+println!("{}", walls.len());
+            walls.insert(Point {
+                x: obst[i].0,
+                y: obst[i].1,
+            });
+            i += 1;
         }
     }
-    println!("{}", edges);
 }
