@@ -9,7 +9,7 @@ struct Point {
 
 impl Point {
     fn north(&self) -> Option<Self> {
-        if self.y > 1 {
+        if self.y > 0 {
             Some(Point {
                 x: self.x,
                 y: self.y - 1,
@@ -19,7 +19,7 @@ impl Point {
         }
     }
     fn south(&self) -> Option<Self> {
-        if self.y < 6 {
+        if self.y < 70 {
             Some(Point {
                 x: self.x,
                 y: self.y + 1,
@@ -39,7 +39,7 @@ impl Point {
         }
     }
     fn east(&self) -> Option<Self> {
-        if self.x < 6 {
+        if self.x < 70 {
             Some(Point {
                 x: self.x + 1,
                 y: self.y,
@@ -53,7 +53,7 @@ impl Point {
 fn main() {
     let f = read_to_string("input.txt").unwrap();
     let start = Point { x: 0, y: 0 };
-    let end = Point { x: 6, y: 6 };
+    let end = Point { x: 70, y: 70 };
     let mut walls: HashSet<Point> = HashSet::new();
     let mut obst = Vec::new();
     for i in f.split('\n') {
@@ -105,11 +105,9 @@ fn main() {
             unvisited.remove(&node.0);
         }
         if !distance.keys().any(|k| *k == end) {
-            println!("{}, {}", i, walls.len());
             println!("{:?}", obst[i - 1]);
             break;
         } else {
-println!("{}", walls.len());
             walls.insert(Point {
                 x: obst[i].0,
                 y: obst[i].1,
