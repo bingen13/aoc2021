@@ -130,12 +130,19 @@ fn main() {
             if d <= 100 {
                 continue;
             }
-            c += distance
+            distance
                 .iter()
-                .filter(|(k, _)| dist(p, k) == n)
-                .map(|(k, v)| dist(k, p) + v)
-                .filter(|n| (*n < d) && (d - n >= 100))
-                .count();
+                .filter_map(|(k, v)| {
+                    let dist_p_k = dist(p, k);
+                    if dist_p_k == n {
+                        let mindist = dist_p_k + v;
+                        if (mindist < d) && (d - mindist >= 100) {
+                            return Some(());
+                        }
+                    }
+                    None
+                })
+                .for_each(|_| c += 1);
         }
     }
     println!("{}", c);
