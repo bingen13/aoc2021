@@ -41,6 +41,5 @@ fn main() {
     let mut h = HashMap::new();
     v.iter()
         .for_each(|m| m.iter().for_each(|(k, v)| *h.entry(k).or_insert(0) += v));
-    println!("{:?}", h.iter().max_by_key(|(_, v)| *v).unwrap());
-println!("{}", numbers.len());
+    println!("{:?}", h.values().max().unwrap());
 }
