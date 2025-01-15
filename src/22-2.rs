@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs::read_to_string;
-use std::iter::{once, successors};
+use std::iter::successors;
 
 fn mix(n1: i64, n2: i64) -> i64 {
     n2 ^ n1
@@ -27,8 +27,8 @@ fn main() {
     let suc = |n: &i64| Some(next_secret(*n));
     numbers.iter().for_each(|&n| {
         let mut h: HashMap<(i64, i64, i64, i64), i64> = HashMap::new();
-        once(n)
-            .chain(successors(Some(n), suc).take(2000))
+        successors(Some(n), suc)
+            .take(2001)
             .map(|n| n % 10)
             .collect::<Vec<_>>()
             .windows(5)
